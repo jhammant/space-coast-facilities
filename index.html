@@ -827,8 +827,10 @@ const costData = [
   {year:2018,cost:2600,vehicle:'Falcon 9 Block 5',projected:false},
   {year:2018.5,cost:1400,vehicle:'Falcon Heavy',projected:false},
   {year:2025,cost:3500,vehicle:'New Glenn (est)',projected:false,standalone:true},
-  {year:2025.5,cost:200,vehicle:'Starship (early)',projected:true},
-  {year:2027,cost:10,vehicle:'Starship (target)',projected:true},
+  {year:2025.5,cost:1500,vehicle:'Starship (early, est)',projected:true},
+  {year:2027,cost:500,vehicle:'Starship (reused, est)',projected:true},
+  {year:2030,cost:100,vehicle:'Starship (high flight rate)',projected:true},
+  {year:2035,cost:10,vehicle:'Starship (aspirational)',projected:true},
 ];
 
 // ============================================================
@@ -2025,7 +2027,7 @@ function drawCostCollapse(){
 
   const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
 
-  const x=d3.scaleLinear().domain([1968,2028]).range([margin.left,W-margin.right]);
+  const x=d3.scaleLinear().domain([1968,2036]).range([margin.left,W-margin.right]);
   const y=d3.scaleLog().domain([5,60000]).range([H-margin.bottom,margin.top]);
 
   [10,100,1000,10000,50000].forEach(v=>{
@@ -2037,7 +2039,7 @@ function drawCostCollapse(){
 
   // Smart x-axis labels — auto-thins to prevent overlap
   const costYearLabels = [];
-  for(let yr=1970;yr<=2027;yr+=5){
+  for(let yr=1970;yr<=2035;yr+=5){
     costYearLabels.push({x:x(yr), y:H-margin.bottom+20, text:String(yr)});
   }
   smartAxisLabels(svg, costYearLabels, {minGap: isMobile?50:35});
@@ -2102,8 +2104,8 @@ function drawCostCollapse(){
         .transition().delay(1500).duration(500).attr('opacity',0.85);
     }
 
-    // Labels for other key points
-    if(!isStandalone && !isMobile && (i===0||i===4||i===7||i===9||i===10)){
+    // Labels for other key points (indices: 0=Saturn V, 4=F9v1.0, 7=FH, 9=Starship early, 12=aspirational)
+    if(!isStandalone && !isMobile && (i===0||i===4||i===7||i===9||i===12)){
       svg.append('text')
         .attr('x',x(d.year)+8).attr('y',y(d.cost)-10)
         .attr('fill',d.projected?'#10b981':'#94a3b8')
