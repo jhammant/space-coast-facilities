@@ -110,7 +110,7 @@ section{position:relative;z-index:1;min-height:100vh;padding:100px 2rem 60px}
 .glass-panel{
   background:var(--glass-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border:1px solid var(--glass-border);border-radius:16px;
-  padding:2rem;margin-bottom:2rem;
+  padding:2rem;margin-bottom:2rem;overflow:hidden;
   transition:border-color 0.3s,box-shadow 0.3s;
 }
 .glass-panel:hover{border-color:rgba(148,163,184,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.3)}
@@ -128,7 +128,7 @@ section{position:relative;z-index:1;min-height:100vh;padding:100px 2rem 60px}
 .section-header p{color:var(--text-secondary);max-width:600px;font-size:1rem}
 
 /* Viz containers — CRITICAL: min-height so IntersectionObserver can see them */
-.viz-container{width:100%;overflow:visible;min-height:100px}
+.viz-container{width:100%;overflow:hidden;min-height:100px}
 .viz-container svg{width:100%;height:auto;overflow:visible}
 
 /* Tooltip */
@@ -877,7 +877,12 @@ function drawTimeline(){
   const rowH=isMobile?65:52;
   const H=margin.top+timelineData.length*rowH+margin.bottom;
 
-  const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`).style('overflow','hidden');
+
+  // Clip all content to the SVG bounds to prevent text bleeding into other sections
+  svg.append('defs').append('clipPath').attr('id','timeline-clip')
+    .append('rect').attr('x',0).attr('y',0).attr('width',W).attr('height',H);
+  svg.attr('clip-path','url(#timeline-clip)');
 
   const x=d3.scaleLinear().domain([2014.5,2027.5]).range([margin.left+10,W-margin.right]);
   const typeIcon={construction:'🔨',completion:'✅',announcement:'📢',expansion:'📐',lease:'📋',contract:'💰',milestone:'🎯'};
@@ -912,14 +917,22 @@ function drawTimeline(){
     .on('mouseout',function(){d3.select(this).transition().duration(200).attr('r',7);hideTooltip()})
     .transition().duration(600).delay((_,i)=>i*60).attr('r',7);
 
-  // Text label
+  // Text label — on mobile, aggressively truncate to prevent overflow
   eventGroups.append('text')
     .attr('x',d=>{const px=x(d.year);return px>W*0.55?px-14:px+14})
     .attr('y',rowH/2+4)
     .attr('text-anchor',d=>x(d.year)>W*0.55?'end':'start')
-    .attr('fill','#e2e8f0').attr('font-size',isMobile?'9px':'11px').attr('font-weight','500')
+    .attr('fill','#e2e8f0').attr('font-size',isMobile?'8px':'11px').attr('font-weight','500')
     .attr('opacity',0)
-    .text(d=>{const maxLen=isMobile?35:75;return d.event.length>maxLen?d.event.slice(0,maxLen-3)+'…':d.event})
+    .each(function(d){
+      const px=x(d.year);
+      // Calculate available width from dot to edge
+      const availW=px>W*0.55?px-14-10:W-px-14-10;
+      const charW=isMobile?4.5:6.2;
+      const maxChars=Math.max(10,Math.floor(availW/charW));
+      const txt=d.event.length>maxChars?d.event.slice(0,maxChars-1)+'…':d.event;
+      d3.select(this).text(txt);
+    })
     .transition().delay((_,i)=>200+i*60).duration(500).attr('opacity',1);
 }
 
@@ -1449,14 +1462,22 @@ function drawPower(){
       .transition().delay(1000+i*150).duration(400).attr('opacity',1);
   });
 
-  // Reference lines
-  refLines.forEach(r=>{
+  // Reference lines — stagger labels on mobile to avoid overlap
+  refLines.forEach((r,ri)=>{
     const xPos=labelW+gwScale(r.gw);
-    svg.append('line').attr('x1',xPos).attr('x2',xPos).attr('y1',0).attr('y2',svgH-10)
+    svg.append('line').attr('x1',xPos).attr('x2',xPos).attr('y1',0).attr('y2',svgH-20)
       .attr('stroke',r.color).attr('stroke-width',1.5).attr('stroke-dasharray','6,4');
-    svg.append('text').attr('x',xPos).attr('y',svgH-2)
-      .attr('text-anchor','middle').attr('fill',r.color).attr('font-size','9px').attr('font-weight','500')
-      .text(`← ${r.name} (${r.gw} GW)`);
+    if(isMobile){
+      // On mobile, place labels at staggered Y positions above the bottom
+      const labelY=ri===0?svgH-12:svgH-2;
+      svg.append('text').attr('x',xPos).attr('y',labelY)
+        .attr('text-anchor',xPos>W*0.6?'end':'start').attr('fill',r.color).attr('font-size','7px').attr('font-weight','500')
+        .text(`${r.name} ${r.gw}GW`);
+    } else {
+      svg.append('text').attr('x',xPos).attr('y',svgH-2)
+        .attr('text-anchor','middle').attr('fill',r.color).attr('font-size','9px').attr('font-weight','500')
+        .text(`← ${r.name} (${r.gw} GW)`);
+    }
   });
 }
 
@@ -1487,10 +1508,16 @@ function drawMap(){
   const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
 
   const centerLat=28.5,centerLon=-80.65;
-  const zoomFactor=Math.min(W,800)*18;
+  // Calculate zoom to fit the data extent into the SVG
+  // Lat range: ~28.30 to 28.75 (0.45), Lon range: ~-80.85 to -80.52 (0.33)
+  const latRange=0.50, lonRange=0.38;
+  const cosLat=Math.cos(centerLat*Math.PI/180);
+  const zoomX=(W*0.8)/(lonRange*cosLat);
+  const zoomY=(H*0.8)/latRange;
+  const zoomFactor=Math.min(zoomX,zoomY);
 
   function project(lat,lon){
-    const x=W/2+(lon-centerLon)*zoomFactor*Math.cos(centerLat*Math.PI/180);
+    const x=W/2+(lon-centerLon)*zoomFactor*cosLat;
     const y=H/2-(lat-centerLat)*zoomFactor;
     return [x,y];
   }
@@ -1604,6 +1631,7 @@ function drawSpaceRace(){
     {era:'commercial',start:1995,end:2016,label:'Commercial'},
     {era:'new-space',start:2016,end:2027,label:'New Space Race'},
   ];
+  const eraShortLabels={'Cold War':'Cold War','Shuttle Era':'Shuttle','Commercial':'Comm.','New Space Race':'New Space'};
   eraBands.forEach(b=>{
     svg.append('rect')
       .attr('x',x(b.start)).attr('y',10).attr('width',x(b.end)-x(b.start)).attr('height',H-20)
@@ -1611,7 +1639,8 @@ function drawSpaceRace(){
     svg.append('text')
       .attr('x',(x(b.start)+x(b.end))/2).attr('y',24)
       .attr('text-anchor','middle').attr('fill',eraColors[b.era][0]).attr('class','era-label')
-      .attr('opacity',0.5).text(b.label);
+      .attr('font-size',isMobile?'7px':'10px')
+      .attr('opacity',0.5).text(isMobile?(eraShortLabels[b.label]||b.label):b.label);
   });
 
   // Decade markers
@@ -1654,7 +1683,9 @@ function drawSpaceRace(){
       d3.select(this).transition().duration(200).attr('r',isMobile?5:7).attr('fill-opacity',0.8);hideTooltip();
     });
 
-    if(!isMobile||i%2===0){
+    // On mobile only show labels for every 3rd node to prevent overlap in dense modern era
+    const showLabel=isMobile?i%3===0:true;
+    if(showLabel){
       svg.append('text').attr('x',cx).attr('y',above?nodeY-12:nodeY+16)
         .attr('text-anchor','middle').attr('fill',colors[0]).attr('font-size',isMobile?'7px':'10px')
         .attr('font-weight','600').attr('opacity',0).text(Math.floor(d.year))
@@ -1662,7 +1693,7 @@ function drawSpaceRace(){
       svg.append('text').attr('x',cx).attr('y',above?nodeY-24:nodeY+28)
         .attr('text-anchor','middle').attr('fill','#94a3b8').attr('font-size',isMobile?'6px':'9px')
         .attr('opacity',0)
-        .text(d.name.length>(isMobile?12:20)?d.name.slice(0,isMobile?10:18)+'…':d.name)
+        .text(d.name.length>(isMobile?10:20)?d.name.slice(0,isMobile?8:18)+'…':d.name)
         .transition().delay(500+i*70).duration(400).attr('opacity',0.8);
     }
   });
@@ -1676,7 +1707,7 @@ function drawSatGrowth(){
   container.innerHTML='';
   const W=container.clientWidth;
   const isMobile=W<600;
-  const margin={top:30,right:40,bottom:50,left:60};
+  const margin={top:30,right:isMobile?20:40,bottom:50,left:isMobile?45:60};
   const H=isMobile?350:420;
 
   const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
@@ -1696,12 +1727,13 @@ function drawSatGrowth(){
       .attr('text-anchor','end').attr('fill','#64748b').attr('font-size','10px').text(fmt(v));
   });
 
-  for(let yr=1960;yr<=2025;yr+=10){
+  const satYearStep=isMobile?20:10;
+  for(let yr=1960;yr<=2025;yr+=satYearStep){
     svg.append('text').attr('x',x(yr)).attr('y',H-margin.bottom+20)
-      .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','10px').text(yr);
+      .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size',isMobile?'9px':'10px').text(yr);
   }
   svg.append('text').attr('x',x(2026)).attr('y',H-margin.bottom+20)
-    .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','10px').attr('font-style','italic').text('2026*');
+    .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size',isMobile?'9px':'10px').attr('font-style','italic').text('2026*');
 
   const area=d3.area().x(d=>x(d.year)).y0(y(0)).y1(d=>y(d.count)).curve(d3.curveMonotoneX);
   const line=d3.line().x(d=>x(d.year)).y(d=>y(d.count)).curve(d3.curveMonotoneX);
@@ -1780,9 +1812,10 @@ function drawCostCollapse(){
       .attr('text-anchor','end').attr('fill','#64748b').attr('font-size','10px').text('$'+fmt(v));
   });
 
-  for(let yr=1970;yr<=2025;yr+=5){
+  const costYearStep=isMobile?10:5;
+  for(let yr=1970;yr<=2025;yr+=costYearStep){
     svg.append('text').attr('x',x(yr)).attr('y',H-margin.bottom+20)
-      .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','10px').text(yr);
+      .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size',isMobile?'9px':'10px').text(yr);
   }
 
   const solidData=costData.filter(d=>!d.projected);
