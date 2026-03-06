@@ -3,11 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space Coast: The New Cape — Rocket Facility Scale Visualization</title>
+<title>Space Coast: The New Cape — Interactive Scale Visualization</title>
 <meta name="description" content="Interactive visualization of the massive scale of Space Coast rocket manufacturing facilities — SpaceX, Blue Origin, Amazon Kuiper, and AST SpaceMobile.">
 <meta property="og:title" content="Space Coast: The New Cape">
 <meta property="og:description" content="Visualizing the massive scale of rocket manufacturing on Florida's Space Coast">
 <meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -26,7 +29,6 @@ body{
   background:var(--bg-deep);color:var(--text-primary);
   line-height:1.6;overflow-x:hidden;
 }
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 /* Stars canvas */
 #stars-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
@@ -34,20 +36,39 @@ body{
 /* Navigation */
 nav{
   position:fixed;top:0;left:0;right:0;z-index:100;
-  background:rgba(6,10,20,0.85);backdrop-filter:blur(20px);
+  background:rgba(6,10,20,0.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border-bottom:1px solid var(--glass-border);
-  padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between;
   transition:transform 0.3s ease;
 }
 nav.hidden{transform:translateY(-100%)}
-.nav-brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.1rem;color:var(--text-primary);letter-spacing:-0.02em}
+.nav-brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.05rem;color:var(--text-primary);letter-spacing:-0.02em;white-space:nowrap}
 .nav-brand span{color:var(--spacex-light);font-weight:400}
-.nav-links{display:flex;gap:0.5rem;flex-wrap:wrap}
+.nav-links{display:flex;gap:0.25rem;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.nav-links::-webkit-scrollbar{display:none}
 .nav-links a{
-  color:var(--text-secondary);text-decoration:none;font-size:0.8rem;font-weight:500;
-  padding:0.35rem 0.75rem;border-radius:6px;transition:all 0.2s;letter-spacing:0.02em;
+  color:var(--text-secondary);text-decoration:none;font-size:0.75rem;font-weight:500;
+  padding:0.3rem 0.6rem;border-radius:6px;transition:all 0.2s;letter-spacing:0.02em;white-space:nowrap;
 }
 .nav-links a:hover,.nav-links a.active{color:var(--text-primary);background:rgba(148,163,184,0.1)}
+.hamburger{display:none;background:none;border:none;color:var(--text-primary);font-size:1.5rem;cursor:pointer;padding:0.25rem}
+.nav-mobile{
+  display:none;position:fixed;top:56px;left:0;right:0;z-index:99;
+  background:rgba(6,10,20,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--glass-border);padding:0.75rem 1rem;
+  flex-direction:column;gap:0.25rem;max-height:calc(100vh - 56px);overflow-y:auto;
+}
+.nav-mobile.open{display:flex}
+.nav-mobile a{
+  color:var(--text-secondary);text-decoration:none;font-size:0.85rem;font-weight:500;
+  padding:0.5rem 0.75rem;border-radius:6px;transition:all 0.2s;
+}
+.nav-mobile a:hover,.nav-mobile a.active{color:var(--text-primary);background:rgba(148,163,184,0.1)}
+
+@media(max-width:900px){
+  .nav-links{display:none}
+  .hamburger{display:block}
+}
 
 /* Sections */
 section{position:relative;z-index:1;min-height:100vh;padding:100px 2rem 60px}
@@ -63,6 +84,7 @@ section{position:relative;z-index:1;min-height:100vh;padding:100px 2rem 60px}
   font-weight:800;line-height:1.05;letter-spacing:-0.03em;
   background:linear-gradient(135deg,#f1f5f9 0%,#0ea5e9 50%,#a78bfa 100%);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
   margin-bottom:1.5rem;
 }
 #hero .subtitle{
@@ -70,23 +92,23 @@ section{position:relative;z-index:1;min-height:100vh;padding:100px 2rem 60px}
   max-width:700px;font-weight:300;margin-bottom:3rem;line-height:1.5;
 }
 .hero-stats{display:flex;gap:2rem;flex-wrap:wrap;justify-content:center;margin-bottom:3rem}
-.hero-stat{text-align:center}
+.hero-stat{text-align:center;min-width:120px}
 .hero-stat .number{
   font-family:'Space Grotesk',sans-serif;font-size:clamp(2rem,4vw,3rem);
   font-weight:700;display:block;
 }
-.hero-stat .label{font-size:0.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em}
+.hero-stat .label{font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em}
 .scroll-indicator{
   position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
   animation:bob 2s ease-in-out infinite;color:var(--text-muted);font-size:0.8rem;
   display:flex;flex-direction:column;align-items:center;gap:0.5rem;
 }
-.scroll-arrow{width:24px;height:24px;border-right:2px solid var(--text-muted);border-bottom:2px solid var(--text-muted);transform:rotate(45deg)}
+.scroll-arrow{width:20px;height:20px;border-right:2px solid var(--text-muted);border-bottom:2px solid var(--text-muted);transform:rotate(45deg)}
 @keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(10px)}}
 
 /* Glass panels */
 .glass-panel{
-  background:var(--glass-bg);backdrop-filter:blur(20px);
+  background:var(--glass-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border:1px solid var(--glass-border);border-radius:16px;
   padding:2rem;margin-bottom:2rem;
   transition:border-color 0.3s,box-shadow 0.3s;
@@ -105,14 +127,14 @@ section{position:relative;z-index:1;min-height:100vh;padding:100px 2rem 60px}
 }
 .section-header p{color:var(--text-secondary);max-width:600px;font-size:1rem}
 
-/* Viz containers */
-.viz-container{width:100%;overflow:visible}
+/* Viz containers — CRITICAL: min-height so IntersectionObserver can see them */
+.viz-container{width:100%;overflow:visible;min-height:100px}
 .viz-container svg{width:100%;height:auto;overflow:visible}
 
 /* Tooltip */
 .tooltip{
   position:fixed;pointer-events:none;z-index:200;
-  background:rgba(6,10,20,0.95);backdrop-filter:blur(16px);
+  background:rgba(6,10,20,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
   border:1px solid var(--glass-border);border-radius:10px;
   padding:1rem 1.25rem;max-width:320px;
   box-shadow:0 20px 40px rgba(0,0,0,0.5);
@@ -145,24 +167,7 @@ section{position:relative;z-index:1;min-height:100vh;padding:100px 2rem 60px}
 .tab-btn:hover{background:rgba(148,163,184,0.15);color:var(--text-primary)}
 .tab-btn.active{background:rgba(14,165,233,0.15);border-color:rgba(14,165,233,0.4);color:var(--spacex-light)}
 
-/* Comparison reference lines */
-.ref-line{stroke-dasharray:6,4;opacity:0.4}
-.ref-label{font-size:11px;fill:var(--text-muted)}
-
-/* Satellite viz */
-.sat-dot{opacity:0.7;transition:opacity 0.2s}
-.sat-dot:hover{opacity:1}
-
-/* Map */
-.map-label{font-size:10px;fill:var(--text-secondary);pointer-events:none}
-.map-feature{fill:rgba(148,163,184,0.08);stroke:rgba(148,163,184,0.2);stroke-width:0.5}
-
-/* Rockets */
-.rocket-silhouette{cursor:pointer;transition:filter 0.3s}
-.rocket-silhouette:hover{filter:brightness(1.3) drop-shadow(0 0 20px rgba(14,165,233,0.4))}
-.rocket-label{font-family:'Space Grotesk',sans-serif}
-.thrust-bar-track{fill:rgba(148,163,184,0.06);rx:4}
-.thrust-bar-fill{rx:4;transition:width 0.8s cubic-bezier(0.16,1,0.3,1)}
+/* Comparison cards */
 .comparison-card{
   display:flex;align-items:center;gap:1.25rem;padding:1rem 1.25rem;
   border-bottom:1px solid var(--glass-border);
@@ -176,38 +181,38 @@ section{position:relative;z-index:1;min-height:100vh;padding:100px 2rem 60px}
   font-family:'Space Grotesk',sans-serif;font-size:1.8rem;font-weight:800;
   color:var(--spacex-light);flex-shrink:0;min-width:80px;text-align:right;
 }
-.stat-pills{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.75rem}
-.stat-pill{
-  background:rgba(148,163,184,0.08);border:1px solid var(--glass-border);
-  border-radius:20px;padding:0.3rem 0.75rem;font-size:0.75rem;color:var(--text-secondary);
-  display:flex;align-items:center;gap:0.35rem;
-}
-.stat-pill strong{color:var(--text-primary);font-weight:600}
 
 /* Power meter */
-.power-meter{position:relative;margin:1.5rem 0}
-.power-row{display:flex;align-items:center;gap:1rem;margin-bottom:1rem}
-.power-label{min-width:140px;font-size:0.85rem;font-weight:600;text-align:right;flex-shrink:0}
-.power-bar-track{flex:1;height:32px;background:rgba(148,163,184,0.06);border-radius:6px;overflow:hidden;position:relative}
-.power-bar-fill{height:100%;border-radius:6px;position:relative;overflow:hidden;min-width:2px}
 .power-bar-fill::after{
   content:'';position:absolute;top:0;left:0;right:0;bottom:0;
   background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.15) 50%,transparent 100%);
   animation:powerShimmer 2s ease-in-out infinite;
 }
 @keyframes powerShimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-.power-value{min-width:80px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.9rem;flex-shrink:0}
-.landmark-silhouette{opacity:0.85;transition:opacity 0.2s}
-.landmark-silhouette:hover{opacity:1}
 
-/* Space Race Timeline */
-.timeline-node{cursor:pointer;transition:transform 0.2s}
-.timeline-node:hover{transform:scale(1.15)}
-.era-label{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:600}
+/* Wow counter */
+.wow-counter{
+  font-family:'Space Grotesk',sans-serif;font-size:clamp(3rem,8vw,6rem);
+  font-weight:900;text-align:center;line-height:1;
+  background:linear-gradient(135deg,var(--spacex-light),var(--asts-light));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  margin:1rem 0 0.5rem;
+}
+.wow-label{text-align:center;color:var(--text-secondary);font-size:1.1rem;margin-bottom:2rem}
 
-/* Satellite Growth */
-.annotation-line{stroke:var(--text-muted);stroke-width:1;stroke-dasharray:3,3}
-.annotation-text{font-size:11px;fill:var(--text-secondary);font-weight:500}
+/* Cost stat */
+.cost-stat{
+  font-family:'Space Grotesk',sans-serif;font-size:clamp(2.5rem,6vw,4.5rem);
+  font-weight:900;text-align:center;line-height:1;
+  background:linear-gradient(135deg,#10b981,#0ea5e9);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  margin:1rem 0 0.5rem;
+}
+.cost-stat-label{text-align:center;color:var(--text-secondary);font-size:1rem;margin-bottom:2rem}
+
+/* Stat card */
 .stat-card{
   background:rgba(0,82,136,0.15);border:1px solid rgba(14,165,233,0.25);
   border-radius:12px;padding:1.25rem 1.5rem;margin-top:1.5rem;
@@ -217,25 +222,16 @@ section{position:relative;z-index:1;min-height:100vh;padding:100px 2rem 60px}
 .stat-card .stat-text{font-size:1rem;color:var(--text-secondary)}
 .stat-card .stat-text strong{color:var(--spacex-light);font-weight:700}
 
-/* Cost Collapse */
-.cost-stat{
-  font-family:'Space Grotesk',sans-serif;font-size:clamp(2.5rem,6vw,4.5rem);
-  font-weight:900;text-align:center;line-height:1;
-  background:linear-gradient(135deg,#10b981,#0ea5e9);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  margin:1rem 0 0.5rem;
-}
-.cost-stat-label{text-align:center;color:var(--text-secondary);font-size:1rem;margin-bottom:2rem}
+/* Annotation styles */
+.annotation-line{stroke:var(--text-muted);stroke-width:1;stroke-dasharray:3,3}
+.annotation-text{font-size:11px;fill:var(--text-secondary);font-weight:500}
 
-/* Wow counter */
-.wow-counter{
-  font-family:'Space Grotesk',sans-serif;font-size:clamp(3rem,8vw,6rem);
-  font-weight:900;text-align:center;line-height:1;
-  background:linear-gradient(135deg,var(--spacex-light),var(--asts-light));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  margin:1rem 0 0.5rem;
-}
-.wow-label{text-align:center;color:var(--text-secondary);font-size:1.1rem;margin-bottom:2rem}
+/* Rocket hover */
+.rocket-silhouette{cursor:pointer;transition:filter 0.3s}
+.rocket-silhouette:hover{filter:brightness(1.3) drop-shadow(0 0 20px rgba(14,165,233,0.4))}
+
+/* Space Race */
+.era-label{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:600}
 
 /* Footer */
 footer{
@@ -250,9 +246,10 @@ footer a:hover{color:var(--text-primary)}
 @media(max-width:768px){
   section{padding:80px 1rem 40px}
   .glass-panel{padding:1.25rem}
-  .nav-links{display:none}
   .hero-stats{gap:1rem}
   .legend{gap:0.75rem}
+  .comparison-card{flex-wrap:wrap;gap:0.75rem}
+  .comparison-number{min-width:auto;text-align:left;font-size:1.3rem}
 }
 
 /* Scrollbar */
@@ -278,24 +275,41 @@ footer a:hover{color:var(--text-primary)}
     <a href="#footprint">Footprint</a>
     <a href="#timeline">Timeline</a>
     <a href="#investment">Investment</a>
-    <a href="#satellites">Satellites</a>
+    <a href="#constellations">Constellations</a>
     <a href="#rockets">Rockets</a>
+    <a href="#landmarks">vs Landmarks</a>
+    <a href="#power">Power</a>
     <a href="#map">Map</a>
     <a href="#space-race">Space Race</a>
-    <a href="#sat-growth">Satellites</a>
+    <a href="#sat-growth">Sat Growth</a>
     <a href="#cost-collapse">Cost</a>
   </div>
+  <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
 </nav>
+<div class="nav-mobile" id="nav-mobile">
+  <a href="#hero">Home</a>
+  <a href="#footprint">Facility Footprint</a>
+  <a href="#timeline">Construction Timeline</a>
+  <a href="#investment">Investment Scale</a>
+  <a href="#constellations">Constellation Wars</a>
+  <a href="#rockets">Rocket Comparison</a>
+  <a href="#landmarks">Rockets vs Landmarks</a>
+  <a href="#power">Power Output</a>
+  <a href="#map">Space Coast Map</a>
+  <a href="#space-race">The New Space Race</a>
+  <a href="#sat-growth">Satellites in Orbit</a>
+  <a href="#cost-collapse">The Price Collapse</a>
+</div>
 
 <!-- HERO -->
 <section id="hero">
   <h1>The New Space Race<br>Is Being Built Here</h1>
   <p class="subtitle">Florida's Space Coast is undergoing the largest aerospace construction boom in history. Four companies are building millions of square feet of rocket factories, satellite plants, and launch infrastructure — all within miles of each other.</p>
   <div class="hero-stats">
-    <div class="hero-stat"><span class="number" style="color:var(--spacex-light)">3.9M+</span><span class="label">Sq Ft of Facilities</span></div>
-    <div class="hero-stat"><span class="number" style="color:var(--amazon-light)">$22B+</span><span class="label">Total Investment</span></div>
-    <div class="hero-stat"><span class="number" style="color:var(--asts-light)">45,000+</span><span class="label">Satellites Planned</span></div>
-    <div class="hero-stat"><span class="number" style="color:var(--blue-origin-light)">4</span><span class="label">Major Players</span></div>
+    <div class="hero-stat"><span class="number" data-target="3.8" data-suffix="M+" style="color:var(--spacex-light)">0</span><span class="label">Sq Ft of Facilities</span></div>
+    <div class="hero-stat"><span class="number" data-target="4" data-prefix="$" data-suffix="B+" style="color:var(--amazon-light)">0</span><span class="label">Investment</span></div>
+    <div class="hero-stat"><span class="number" data-target="45" data-suffix=",000+" style="color:var(--asts-light)">0</span><span class="label">Satellites Planned</span></div>
+    <div class="hero-stat"><span class="number" data-target="4" data-suffix="" style="color:var(--blue-origin-light)">0</span><span class="label">Major Players</span></div>
   </div>
   <div class="scroll-indicator">
     <span>Scroll to explore</span>
@@ -303,13 +317,13 @@ footer a:hover{color:var(--text-primary)}
   </div>
 </section>
 
-<!-- FOOTPRINT COMPARISON -->
+<!-- 1. FOOTPRINT COMPARISON -->
 <section id="footprint">
   <div class="section-inner">
     <div class="section-header reveal">
       <div class="overline">Scale Comparison</div>
       <h2>How Big Are These Buildings?</h2>
-      <p>Every rectangle is drawn to scale. The dashed outlines show familiar landmarks for comparison.</p>
+      <p>Each rectangle is proportional to real floor area. The dashed outline shows a football field for reference.</p>
     </div>
     <div class="legend reveal reveal-delay-1">
       <div class="legend-item"><div class="legend-dot" style="background:var(--spacex)"></div>SpaceX</div>
@@ -319,12 +333,12 @@ footer a:hover{color:var(--text-primary)}
       <div class="legend-item"><div class="legend-dot" style="background:rgba(148,163,184,0.3);border:1px dashed var(--text-muted)"></div>Reference</div>
     </div>
     <div class="glass-panel reveal reveal-delay-2">
-      <div class="viz-container" id="footprint-viz"></div>
+      <div class="viz-container" id="footprint-viz" style="min-height:500px"></div>
     </div>
   </div>
 </section>
 
-<!-- TIMELINE -->
+<!-- 2. TIMELINE -->
 <section id="timeline">
   <div class="section-inner">
     <div class="section-header reveal">
@@ -333,12 +347,12 @@ footer a:hover{color:var(--text-primary)}
       <p>Major milestones in the aerospace construction boom, from the first factories to the massive expansions underway now.</p>
     </div>
     <div class="glass-panel reveal reveal-delay-1">
-      <div class="viz-container" id="timeline-viz"></div>
+      <div class="viz-container" id="timeline-viz" style="min-height:600px"></div>
     </div>
   </div>
 </section>
 
-<!-- INVESTMENT -->
+<!-- 3. INVESTMENT -->
 <section id="investment">
   <div class="section-inner">
     <div class="section-header reveal">
@@ -353,30 +367,30 @@ footer a:hover{color:var(--text-primary)}
       <div class="legend-item"><div class="legend-dot" style="background:var(--asts)"></div>AST SpaceMobile</div>
     </div>
     <div class="glass-panel reveal reveal-delay-2">
-      <div class="viz-container" id="investment-viz"></div>
+      <div class="viz-container" id="investment-viz" style="min-height:450px"></div>
     </div>
   </div>
 </section>
 
-<!-- SATELLITES -->
-<section id="satellites">
+<!-- 4. CONSTELLATIONS -->
+<section id="constellations">
   <div class="section-inner">
     <div class="section-header reveal">
       <div class="overline">Orbital Ambitions</div>
       <h2>Constellation Wars</h2>
-      <p>The race to blanket Earth in satellite coverage. Each dot represents satellites — hover to explore each constellation's ambitions.</p>
+      <p>The race to blanket Earth in satellite coverage. Each bar shows planned vs deployed — hover to explore each constellation's ambitions.</p>
     </div>
     <div class="tab-controls reveal reveal-delay-1">
       <button class="tab-btn active" data-tab="count">Satellite Count</button>
       <button class="tab-btn" data-tab="antenna">Antenna Scale</button>
     </div>
     <div class="glass-panel reveal reveal-delay-2">
-      <div class="viz-container" id="satellite-viz"></div>
+      <div class="viz-container" id="satellite-viz" style="min-height:400px"></div>
     </div>
   </div>
 </section>
 
-<!-- ROCKETS -->
+<!-- 5. ROCKETS -->
 <section id="rockets">
   <div class="section-inner">
     <div class="section-header reveal">
@@ -385,33 +399,41 @@ footer a:hover{color:var(--text-primary)}
       <p>Scaled side-by-side: the rockets being built and launched from these very facilities. Hover each rocket for detailed specs.</p>
     </div>
     <div class="glass-panel reveal reveal-delay-1">
-      <div class="viz-container" id="rockets-viz"></div>
+      <div class="viz-container" id="rockets-viz" style="min-height:500px"></div>
     </div>
+  </div>
+</section>
 
-    <div class="section-header reveal" style="margin-top:3rem">
-      <div class="overline">Height vs Landmarks</div>
+<!-- 6. LANDMARKS -->
+<section id="landmarks">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="overline">Rockets vs Landmarks</div>
       <h2>Taller Than the Statue of Liberty</h2>
       <p>These rockets dwarf some of the world's most iconic structures. Silhouettes drawn to scale.</p>
     </div>
     <div class="glass-panel reveal reveal-delay-1">
-      <div class="viz-container" id="landmarks-viz"></div>
+      <div class="viz-container" id="landmarks-viz" style="min-height:450px"></div>
     </div>
+  </div>
+</section>
 
-    <div class="section-header reveal" style="margin-top:3rem">
+<!-- 7. POWER -->
+<section id="power">
+  <div class="section-inner">
+    <div class="section-header reveal">
       <div class="overline">Raw Power</div>
       <h2>Wait… How Much Power?</h2>
       <p>Starship's 33 Raptor engines produce ~224 gigawatts of thermal power at launch. That's not a typo. Here's what that means.</p>
     </div>
     <div class="glass-panel reveal reveal-delay-1">
-      <div class="viz-container" id="power-viz"></div>
+      <div class="viz-container" id="power-viz" style="min-height:400px"></div>
     </div>
-    <div class="reveal reveal-delay-2" style="margin-top:1.5rem">
-      <div class="glass-panel" id="thrust-comparisons"></div>
-    </div>
+    <div class="glass-panel reveal reveal-delay-2" id="thrust-comparisons"></div>
   </div>
 </section>
 
-<!-- MAP -->
+<!-- 8. MAP -->
 <section id="map">
   <div class="section-inner">
     <div class="section-header reveal">
@@ -426,12 +448,12 @@ footer a:hover{color:var(--text-primary)}
       <div class="legend-item"><div class="legend-dot" style="background:var(--asts)"></div>AST SpaceMobile</div>
     </div>
     <div class="glass-panel reveal reveal-delay-2">
-      <div class="viz-container" id="map-viz"></div>
+      <div class="viz-container" id="map-viz" style="min-height:500px"></div>
     </div>
   </div>
 </section>
 
-<!-- SPACE RACE TIMELINE -->
+<!-- 9. SPACE RACE -->
 <section id="space-race">
   <div class="section-inner">
     <div class="section-header reveal">
@@ -440,18 +462,18 @@ footer a:hover{color:var(--text-primary)}
       <p>From Sputnik to Starship — seven decades of rocketry milestones, color-coded by era.</p>
     </div>
     <div class="legend reveal reveal-delay-1">
-      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#dc2626,#78716c)"></div>Cold War</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div>Cold War</div>
       <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>Shuttle Era</div>
-      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#0ea5e9,#10b981)"></div>Commercial</div>
-      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#a78bfa,#38bdf8)"></div>New Space Race</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#0ea5e9"></div>Commercial</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>New Space Race</div>
     </div>
     <div class="glass-panel reveal reveal-delay-2">
-      <div class="viz-container" id="spacerace-viz"></div>
+      <div class="viz-container" id="spacerace-viz" style="min-height:350px"></div>
     </div>
   </div>
 </section>
 
-<!-- SATELLITE GROWTH -->
+<!-- 10. SATELLITE GROWTH -->
 <section id="sat-growth">
   <div class="section-inner">
     <div class="section-header reveal">
@@ -460,7 +482,7 @@ footer a:hover{color:var(--text-primary)}
       <p>The number of active satellites has exploded — driven by mega-constellations and plummeting launch costs.</p>
     </div>
     <div class="glass-panel reveal reveal-delay-1">
-      <div class="viz-container" id="satgrowth-viz"></div>
+      <div class="viz-container" id="satgrowth-viz" style="min-height:420px"></div>
     </div>
     <div class="stat-card reveal reveal-delay-2">
       <div class="stat-icon">🛰️</div>
@@ -469,7 +491,7 @@ footer a:hover{color:var(--text-primary)}
   </div>
 </section>
 
-<!-- COST COLLAPSE -->
+<!-- 11. COST COLLAPSE -->
 <section id="cost-collapse">
   <div class="section-inner">
     <div class="section-header reveal">
@@ -480,7 +502,7 @@ footer a:hover{color:var(--text-primary)}
     <div class="glass-panel reveal reveal-delay-1">
       <div class="cost-stat" id="cost-counter">5,450×</div>
       <div class="cost-stat-label">cost reduction in 50 years</div>
-      <div class="viz-container" id="costcollapse-viz"></div>
+      <div class="viz-container" id="costcollapse-viz" style="min-height:420px"></div>
     </div>
   </div>
 </section>
@@ -495,8 +517,9 @@ footer a:hover{color:var(--text-primary)}
 // DATA
 // ============================================================
 const COLORS = {
-  SpaceX:'#005288', 'Blue Origin':'#0066CC', Amazon:'#FF9900', ASTS:'#7C3AED',
-  SpaceXLight:'#0ea5e9', 'Blue OriginLight':'#38bdf8', AmazonLight:'#fbbf24', ASTSLight:'#a78bfa',
+  SpaceX:'#005288','Blue Origin':'#0066CC',Amazon:'#FF9900',ASTS:'#7C3AED',
+  SpaceXLight:'#0ea5e9','Blue OriginLight':'#38bdf8',AmazonLight:'#fbbf24',ASTSLight:'#a78bfa',
+  NASA:'#94a3b8',NASALight:'#cbd5e1',
   ref:'rgba(148,163,184,0.25)'
 };
 function companyColor(c){return COLORS[c]||'#94a3b8'}
@@ -505,8 +528,8 @@ function companyColorLight(c){return COLORS[c+'Light']||companyColor(c)}
 const facilities = [
   {name:'Blue Origin Deep South Campus',company:'Blue Origin',sqft:1000000,type:'Manufacturing Campus',note:'Potentially 1M+ sq ft total campus'},
   {name:'Blue Origin Project Horizon',company:'Blue Origin',sqft:800000,type:'Manufacturing',note:'800,000 sq ft on 31 acres, filed Feb 2026'},
-  {name:'SpaceX Gigabay',company:'SpaceX',sqft:700000,type:'Manufacturing',note:'$250M, Starbase TX — completing Dec 2026. 2nd Gigabay planned at KSC'},
-  {name:'Blue Origin New Glenn Factory',company:'Blue Origin',sqft:750000,type:'Rocket Factory',note:'750K sq ft, Merritt Island, Exploration Park (opened Sep 2025)'},
+  {name:'SpaceX Gigabay',company:'SpaceX',sqft:700000,type:'Manufacturing',note:'Starbase, Boca Chica TX — completing Dec 2026'},
+  {name:'Blue Origin New Glenn Factory',company:'Blue Origin',sqft:650000,type:'Rocket Factory',note:'Merritt Island, Exploration Park'},
   {name:'AST SpaceMobile Total',company:'ASTS',sqft:500000,type:'Satellite Manufacturing',note:'Expanded Nov 2025, sites in TX & FL'},
   {name:'Amazon Kuiper Processing',company:'Amazon',sqft:100000,type:'Satellite Processing',note:'KSC, 100-ft clean room, $120M'},
   {name:'Blue Origin Cocoa Warehouse',company:'Blue Origin',sqft:48000,type:'Warehouse & High Bay',note:'20-acre site, 110-ft high bay, $11.5M'},
@@ -539,19 +562,19 @@ const timelineData = [
 
 const investments = [
   {name:'NASA Artemis V Contract',company:'Blue Origin',amount:3400,unit:'M',note:'Blue Moon lander development'},
-  {name:'Starship Program',company:'SpaceX',amount:5000,unit:'M',note:'Est. $5B+ Starbase development, Gigabay, launch infrastructure'},
+  {name:'Starbase Expansion',company:'SpaceX',amount:1000,unit:'M',note:'Est. land + Gigabay + infrastructure'},
   {name:'Project Kuiper Constellation',company:'Amazon',amount:10000,unit:'M',note:'$10B+ total program (est.)'},
   {name:'Kuiper Processing Facility',company:'Amazon',amount:120,unit:'M',note:'KSC satellite processing, 100K sq ft'},
   {name:'Project Horizon Factory',company:'Blue Origin',amount:200,unit:'M',note:'800K sq ft, est. from comparable facilities'},
-  {name:'AST SpaceMobile Program',company:'ASTS',amount:3900,unit:'M',note:'$3.9B total capital raised for satellite constellation + manufacturing'},
+  {name:'AST SpaceMobile Expansion',company:'ASTS',amount:150,unit:'M',note:'500K sq ft manufacturing buildout'},
   {name:'Kuiper Flight HW Building',company:'Amazon',amount:19.5,unit:'M',note:'42K sq ft flight hardware'},
   {name:'Blue Origin Cocoa Site',company:'Blue Origin',amount:11.5,unit:'M',note:'20-acre site with high bay'},
 ];
 
 const satellites = [
   {name:'Starlink',company:'SpaceX',planned:42000,deployed:9900,mass:260,antennaArea:null,note:'V2 Mini satellites, ~260 kg each. ~8,300 operational as of Mar 2026'},
-  {name:'Project Kuiper',company:'Amazon',planned:3236,deployed:27,mass:500,antennaArea:null,note:'First 27 operational sats launched Apr 2025. Half deployed by Jul 2026 deadline'},
-  {name:'BlueBird',company:'ASTS',planned:243,deployed:6,mass:1500,antennaArea:2400,note:'Largest phased-array antennas ever: 2,400 sq ft each. 45-60 by end 2026'},
+  {name:'Project Kuiper',company:'Amazon',planned:3236,deployed:27,mass:500,antennaArea:null,note:'First 27 operational launched Apr 2025. Half deployed by Jul 2026 deadline'},
+  {name:'BlueBird',company:'ASTS',planned:243,deployed:6,mass:1500,antennaArea:2400,note:'Largest phased-array antennas ever: 2,400 sq ft each. BlueBird 6 launched Dec 2025. 45-60 planned by end 2026'},
 ];
 
 const mapLocations = [
@@ -567,6 +590,106 @@ const mapLocations = [
   {name:'Blue Origin Cocoa Site',company:'Blue Origin',lat:28.385,lon:-80.74,r:5,note:'20-acre site, high bay'},
 ];
 
+const rocketData = [
+  {name:'Starship',sub:'Super Heavy + Ship',company:'SpaceX',height:121.3,heightFt:398,diameter:9,
+   thrustKN:80000,thrustLbf:'17M',engines:'33+6 Raptor',payloadLEO:'150–200t',
+   firstFlight:'2024',reusable:'Both stages ("chopstick" catch)',thermalGW:224,
+   color:'#0ea5e9',note:'Tallest and most powerful rocket ever flown'},
+  {name:'Saturn V',sub:'Historical',company:'NASA',height:111,heightFt:363,diameter:10,
+   thrustKN:35100,thrustLbf:'7.9M',engines:'5 F-1',payloadLEO:'140t',
+   firstFlight:'1967',reusable:'No (expendable)',thermalGW:190,
+   color:'#94a3b8',note:'Moon rocket — flew 1967–1973'},
+  {name:'SLS',sub:'Block 1',company:'NASA',height:98,heightFt:322,diameter:8.4,
+   thrustKN:39000,thrustLbf:'8.8M',engines:'4 RS-25 + 2 SRBs',payloadLEO:'95t',
+   firstFlight:'Nov 2022',reusable:'No (fully expendable)',thermalGW:100,
+   color:'#f97316',note:'Artemis program — ~$2.2B per launch'},
+  {name:'New Glenn',sub:'',company:'Blue Origin',height:98,heightFt:322,diameter:7,
+   thrustKN:17000,thrustLbf:'3.85M',engines:'7 BE-4',payloadLEO:'45t',
+   firstFlight:'Jan 2025',reusable:'First stage only',thermalGW:46,
+   color:'#38bdf8',note:'Blue Origin\'s orbital-class heavy-lift rocket'},
+  {name:'Falcon 9',sub:'Block 5',company:'SpaceX',height:70,heightFt:229,diameter:3.7,
+   thrustKN:7600,thrustLbf:'1.7M',engines:'9 Merlin',payloadLEO:'22.8t',
+   firstFlight:'2010',reusable:'First stage',thermalGW:16,
+   color:'#64748b',note:'300+ flights — most-launched active rocket'},
+];
+
+const landmarkData = [
+  {name:'London Eye',height:135,icon:'🎡',color:'#94a3b8'},
+  {name:'Starship',height:121.3,icon:'🚀',color:'#0ea5e9',isRocket:true},
+  {name:"St Paul's\nCathedral",height:111,icon:'⛪',color:'#94a3b8'},
+  {name:'Saturn V',height:111,icon:'🚀',color:'#78716c',isRocket:true},
+  {name:'New Glenn',height:98,icon:'🚀',color:'#38bdf8',isRocket:true},
+  {name:'SLS',height:98,icon:'🚀',color:'#f97316',isRocket:true},
+  {name:'Big Ben',height:96,icon:'🕐',color:'#94a3b8'},
+  {name:'Statue of\nLiberty',height:93,icon:'🗽',color:'#94a3b8'},
+  {name:'Falcon 9',height:70,icon:'🚀',color:'#64748b',isRocket:true},
+  {name:'Tower Bridge',height:65,icon:'🌉',color:'#94a3b8'},
+  {name:'Leaning Tower\nof Pisa',height:56,icon:'🏛️',color:'#94a3b8'},
+  {name:"Nelson's\nColumn",height:52,icon:'🏛️',color:'#94a3b8'},
+];
+
+const powerComparisons = [
+  {icon:'⚡',headline:'19% of the entire US power grid',detail:'The US grid capacity is ~1,200 GW. Starship at launch produces 224 GW — nearly a fifth of it.',value:'224 GW'},
+  {icon:'☢️',headline:'224 nuclear reactors firing at once',detail:'Each Raptor engine\'s thermal output exceeds an entire nuclear power plant (~1 GW). Starship has 33 on the booster alone.',value:'224×'},
+  {icon:'🇬🇧',headline:'Three entire UK power grids',detail:'The UK grid capacity is ~76 GW. Starship could power all of Britain three times over — from a single launch.',value:'3× UK'},
+  {icon:'🏎️',headline:'150,000 Formula 1 cars at full throttle',detail:'An F1 car produces about 1.5 MW at peak power. You\'d need 150,000 of them to match one Starship launch.',value:'150K'},
+  {icon:'🏗️',headline:'60 Hoover Dams',detail:'Hoover Dam generates ~2.08 GW when running full bore. Starship equals about 60 of them. For 8 minutes.',value:'60×'},
+  {icon:'🌙',headline:'18% more powerful than Saturn V',detail:'The mighty Saturn V produced ~190 GW. Starship surpasses the Moon rocket by nearly a fifth.',value:'+18%'},
+];
+
+const spaceRaceData = [
+  {year:1957,name:'Sputnik',detail:'R-7, USSR — first satellite in orbit',era:'cold-war'},
+  {year:1961,name:'Vostok 1',detail:'USSR — first human in space (Gagarin)',era:'cold-war'},
+  {year:1962,name:'Mercury-Atlas 6',detail:'USA — first American in orbit (Glenn)',era:'cold-war'},
+  {year:1967,name:'Saturn V',detail:'Most powerful rocket for 50+ years',era:'cold-war'},
+  {year:1969,name:'Apollo 11',detail:'Moon landing',era:'cold-war'},
+  {year:1981,name:'Space Shuttle',detail:'First reusable spacecraft',era:'shuttle'},
+  {year:1996,name:'Ariane 5',detail:'ESA — European heavy lift',era:'commercial'},
+  {year:2006,name:'Falcon 1',detail:'SpaceX — first private orbital attempt',era:'commercial'},
+  {year:2010,name:'Falcon 9 v1.0',detail:'SpaceX\'s breakthrough',era:'commercial'},
+  {year:2015,name:'Falcon 9 landing',detail:'Reusability proven',era:'commercial'},
+  {year:2018,name:'Falcon Heavy',detail:'Most powerful operational rocket',era:'new-space'},
+  {year:2022,name:'SLS / Artemis I',detail:'NASA\'s return to deep space',era:'new-space'},
+  {year:2024,name:'Starship orbital',detail:'Test flights begin',era:'new-space'},
+  {year:2025,name:'New Glenn',detail:'Blue Origin orbital (Jan)',era:'new-space'},
+  {year:2025.3,name:'Starship catch',detail:'Chopstick catch — full reusability',era:'new-space'},
+  {year:2026,name:'New Glenn-3',detail:'Carries ASTS BlueBird',era:'new-space'},
+];
+
+const eraColors = {
+  'cold-war':['#dc2626','#78716c'],
+  'shuttle':['#f97316','#ea580c'],
+  'commercial':['#0ea5e9','#10b981'],
+  'new-space':['#a78bfa','#38bdf8'],
+};
+
+const satGrowthData = [
+  {year:1957,count:1},{year:1965,count:100},{year:1975,count:300},{year:1985,count:500},
+  {year:1995,count:700},{year:2005,count:900},{year:2010,count:1000},{year:2015,count:1400},
+  {year:2019,count:2200},{year:2020,count:3300},{year:2021,count:4900},{year:2022,count:6900},
+  {year:2023,count:9900},{year:2024,count:12800},{year:2025,count:14900},{year:2026,count:19000},
+];
+
+const satAnnotations = [
+  {year:2019,count:2200,label:'Starlink begins',anchor:'start',dy:-20},
+  {year:2025,count:14900,label:'Kuiper first batch',anchor:'end',dy:-25},
+  {year:2026,count:19000,label:'ASTS BlueBird',anchor:'end',dy:-15},
+];
+
+const costData = [
+  {year:1970,cost:54500,vehicle:'Saturn V',projected:false},
+  {year:1981,cost:54500,vehicle:'Space Shuttle',projected:false},
+  {year:1996,cost:10000,vehicle:'Ariane 5',projected:false},
+  {year:2002,cost:5000,vehicle:'Soyuz',projected:false},
+  {year:2010,cost:4600,vehicle:'Falcon 9 v1.0',projected:false},
+  {year:2013,cost:2700,vehicle:'Falcon 9 v1.1',projected:false},
+  {year:2018,cost:2600,vehicle:'Falcon 9 Block 5',projected:false},
+  {year:2018.5,cost:1400,vehicle:'Falcon Heavy',projected:false},
+  {year:2025,cost:3500,vehicle:'New Glenn (est)',projected:false},
+  {year:2025.5,cost:200,vehicle:'Starship (early)',projected:true},
+  {year:2027,cost:10,vehicle:'Starship (target)',projected:true},
+];
+
 // ============================================================
 // STAR FIELD
 // ============================================================
@@ -577,7 +700,7 @@ const mapLocations = [
   function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;initField()}
   function initField(){
     stars=[];
-    const n=Math.min(300,Math.floor(W*H/4000));
+    const n=Math.min(350,Math.floor(W*H/3500));
     for(let i=0;i<n;i++) stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+0.3,a:Math.random(),s:Math.random()*0.003+0.001});
   }
   function draw(){
@@ -622,16 +745,16 @@ function hideTooltip(){ttEl.classList.remove('visible')}
 // ============================================================
 // REVEAL ON SCROLL
 // ============================================================
-const observer=new IntersectionObserver((entries)=>{
+const revealObserver=new IntersectionObserver((entries)=>{
   entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')});
-},{threshold:0.1,rootMargin:'0px 0px -50px 0px'});
-document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+},{threshold:0.08,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>revealObserver.observe(el));
 
 // ============================================================
-// NAV ACTIVE STATE
+// NAV
 // ============================================================
 const sections=document.querySelectorAll('section');
-const navLinks=document.querySelectorAll('.nav-links a');
+const navLinks=document.querySelectorAll('.nav-links a, .nav-mobile a');
 const navObs=new IntersectionObserver((entries)=>{
   entries.forEach(e=>{
     if(e.isIntersecting){
@@ -641,6 +764,12 @@ const navObs=new IntersectionObserver((entries)=>{
 },{threshold:0.3});
 sections.forEach(s=>navObs.observe(s));
 
+// Hamburger
+const hamburger=document.getElementById('hamburger');
+const navMobile=document.getElementById('nav-mobile');
+hamburger.addEventListener('click',()=>{navMobile.classList.toggle('open');hamburger.textContent=navMobile.classList.contains('open')?'✕':'☰'});
+navMobile.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{navMobile.classList.remove('open');hamburger.textContent='☰'}));
+
 // ============================================================
 // FORMAT HELPERS
 // ============================================================
@@ -648,105 +777,104 @@ function fmt(n){return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'
 function fmtDollars(n){return n>=1000?'$'+(n/1000).toFixed(1)+'B':'$'+n+'M'}
 
 // ============================================================
-// 1. FOOTPRINT VISUALIZATION — TREEMAP
+// 1. FOOTPRINT — D3 TREEMAP
 // ============================================================
 function drawFootprint(){
   const container=document.getElementById('footprint-viz');
   container.innerHTML='';
   const W=container.clientWidth;
-  const H=Math.max(500,W*0.6);
+  const H=Math.max(500,W*0.55);
 
   const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`).attr('preserveAspectRatio','xMidYMid meet');
 
-  // Scale: px per sq ft
-  const maxSqft=1000000;
-  const areaScale=d3.scaleLinear().domain([0,maxSqft]).range([0,W*H*0.35]);
+  // Build hierarchy for treemap
+  const allItems=[...facilities];
+  const root=d3.hierarchy({children:allItems.map(f=>({...f,value:f.sqft}))}).sum(d=>d.value);
 
-  // Draw reference: football field grid
-  const ffW=Math.sqrt(57600*(W/H));const ffH=57600/ffW;
+  d3.treemap()
+    .size([W-20,H-50])
+    .padding(4)
+    .round(true)(root);
 
-  // Position facilities using treemap-like packing
-  const allItems=[...facilities].sort((a,b)=>b.sqft-a.sqft);
+  const leaves=root.leaves();
 
-  // Simple scaled rectangles arranged in rows
-  const padding=8;
-  let cx=padding,cy=padding,rowH=0;
-  const rects=[];
+  // Football field reference area
+  const ffSqft=57600;
+  const totalSqft=d3.sum(facilities,d=>d.sqft);
+  const ffFraction=ffSqft/totalSqft;
+  const ffPixelArea=ffFraction*(W-20)*(H-50);
+  const ffW=Math.sqrt(ffPixelArea*1.75);
+  const ffH=ffPixelArea/ffW;
 
-  allItems.forEach(f=>{
-    const area=areaScale(f.sqft);
-    const aspect=1.4+Math.random()*0.4;
-    let w=Math.sqrt(area*aspect);
-    let h=area/w;
-    if(w>W-2*padding){w=W-2*padding;h=area/w}
-    if(cx+w>W-padding){cx=padding;cy+=rowH+padding;rowH=0}
-    rects.push({...f,x:cx,y:cy,w,h});
-    cx+=w+padding;
-    rowH=Math.max(rowH,h);
-  });
+  // Draw treemap tiles
+  const tiles=svg.selectAll('.tm-tile').data(leaves).enter().append('g').attr('class','tm-tile')
+    .attr('transform',d=>`translate(${d.x0+10},${d.y0+10})`);
 
-  // Adjust SVG height
-  const totalH=Math.max(H,d3.max(rects,d=>d.y+d.h)+padding+40);
-  svg.attr('viewBox',`0 0 ${W} ${totalH}`);
-
-  // Draw reference overlay: football field size
-  const refArea=areaScale(57600);
-  const refW=Math.sqrt(refArea*1.75);const refH=refArea/refW;
-  svg.append('rect').attr('x',W-refW-padding).attr('y',totalH-refH-30)
-    .attr('width',refW).attr('height',refH)
-    .attr('fill','none').attr('stroke','rgba(148,163,184,0.3)').attr('stroke-width',1.5)
-    .attr('stroke-dasharray','6,4').attr('rx',4);
-  svg.append('text').attr('x',W-refW/2-padding).attr('y',totalH-12)
-    .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','11px')
-    .text('⬜ Football Field (57,600 sq ft)');
-
-  // Facility rectangles
-  const groups=svg.selectAll('.facility-rect').data(rects).enter().append('g').attr('class','facility-rect');
-
-  groups.append('rect')
-    .attr('x',d=>d.x).attr('y',d=>d.y)
-    .attr('width',0).attr('height',0)
+  tiles.append('rect')
+    .attr('width',d=>Math.max(0,d.x1-d.x0))
+    .attr('height',0)
     .attr('rx',6)
-    .attr('fill',d=>companyColor(d.company))
-    .attr('fill-opacity',0.35)
-    .attr('stroke',d=>companyColor(d.company))
+    .attr('fill',d=>companyColor(d.data.company))
+    .attr('fill-opacity',0.3)
+    .attr('stroke',d=>companyColor(d.data.company))
     .attr('stroke-width',1.5)
-    .attr('stroke-opacity',0.7)
+    .attr('stroke-opacity',0.6)
+    .style('cursor','pointer')
     .on('mouseover',function(e,d){
       d3.select(this).attr('fill-opacity',0.55).attr('stroke-opacity',1);
-      showTooltip(e,d.name,d.company,`<strong>${fmt(d.sqft)} sq ft</strong> · ${d.type}<br>${d.note}<br><br>≈ ${(d.sqft/57600).toFixed(1)} football fields`);
+      showTooltip(e,d.data.name,d.data.company,
+        `<strong>${fmt(d.data.sqft)} sq ft</strong> · ${d.data.type}<br>${d.data.note}<br><br>≈ ${(d.data.sqft/57600).toFixed(1)} football fields`);
     })
     .on('mousemove',moveTooltip)
-    .on('mouseout',function(){d3.select(this).attr('fill-opacity',0.35).attr('stroke-opacity',0.7);hideTooltip()})
-    .transition().duration(1000).delay((_,i)=>i*120).ease(d3.easeCubicOut)
-    .attr('width',d=>d.w).attr('height',d=>d.h);
+    .on('mouseout',function(){d3.select(this).attr('fill-opacity',0.3).attr('stroke-opacity',0.6);hideTooltip()})
+    .transition().duration(800).delay((_,i)=>i*100).ease(d3.easeCubicOut)
+    .attr('height',d=>Math.max(0,d.y1-d.y0));
 
-  // Labels inside
-  groups.append('text')
-    .attr('x',d=>d.x+d.w/2).attr('y',d=>d.y+d.h/2-8)
-    .attr('text-anchor','middle').attr('fill','#f1f5f9').attr('font-size',d=>d.w>120?'13px':'10px')
-    .attr('font-weight','600').attr('opacity',0)
-    .text(d=>d.name.replace(/SpaceX |Blue Origin |Amazon |AST /,''))
-    .transition().delay((_,i)=>600+i*120).duration(500).attr('opacity',1);
+  // Labels inside tiles
+  tiles.each(function(d){
+    const w=d.x1-d.x0, h=d.y1-d.y0;
+    const g=d3.select(this);
+    const shortName=d.data.name.replace(/^(SpaceX |Blue Origin |Amazon |AST )/,'');
 
-  groups.append('text')
-    .attr('x',d=>d.x+d.w/2).attr('y',d=>d.y+d.h/2+10)
-    .attr('text-anchor','middle').attr('fill','#94a3b8').attr('font-size',d=>d.w>120?'11px':'9px')
-    .attr('opacity',0)
-    .text(d=>fmt(d.sqft)+' sq ft')
-    .transition().delay((_,i)=>700+i*120).duration(500).attr('opacity',1);
+    if(w>60 && h>40){
+      g.append('text')
+        .attr('x',w/2).attr('y',h/2-6)
+        .attr('text-anchor','middle').attr('fill','#f1f5f9')
+        .attr('font-size',w>140?'13px':'10px').attr('font-weight','600')
+        .attr('opacity',0).text(shortName.length>(w/7)?shortName.slice(0,Math.floor(w/7))+'…':shortName)
+        .transition().delay((_,i)=>600+i*100).duration(500).attr('opacity',1);
+
+      g.append('text')
+        .attr('x',w/2).attr('y',h/2+12)
+        .attr('text-anchor','middle').attr('fill','#94a3b8')
+        .attr('font-size',w>140?'11px':'9px')
+        .attr('opacity',0).text(fmt(d.data.sqft)+' sq ft')
+        .transition().delay((_,i)=>700+i*100).duration(500).attr('opacity',1);
+    }
+  });
+
+  // Football field reference
+  svg.append('rect')
+    .attr('x',W-ffW-16).attr('y',H-ffH-32)
+    .attr('width',ffW).attr('height',ffH)
+    .attr('fill','none').attr('stroke','rgba(148,163,184,0.35)').attr('stroke-width',1.5)
+    .attr('stroke-dasharray','6,4').attr('rx',3);
+  svg.append('text')
+    .attr('x',W-ffW/2-16).attr('y',H-10)
+    .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','10px')
+    .text('⬜ Football Field (57,600 sq ft)');
 }
 
 // ============================================================
-// 2. TIMELINE VISUALIZATION
+// 2. CONSTRUCTION TIMELINE — Horizontal dots
 // ============================================================
 function drawTimeline(){
   const container=document.getElementById('timeline-viz');
   container.innerHTML='';
   const W=container.clientWidth;
-  const margin={top:30,right:30,bottom:40,left:30};
   const isMobile=W<600;
-  const rowH=isMobile?70:55;
+  const margin={top:30,right:30,bottom:40,left:30};
+  const rowH=isMobile?65:52;
   const H=margin.top+timelineData.length*rowH+margin.bottom;
 
   const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
@@ -757,7 +885,7 @@ function drawTimeline(){
   // Year grid
   for(let yr=2015;yr<=2027;yr++){
     svg.append('line').attr('x1',x(yr)).attr('x2',x(yr)).attr('y1',margin.top).attr('y2',H-margin.bottom)
-      .attr('stroke','rgba(148,163,184,0.08)').attr('stroke-width',1);
+      .attr('stroke','rgba(148,163,184,0.06)').attr('stroke-width',1);
     svg.append('text').attr('x',x(yr)).attr('y',H-margin.bottom+20)
       .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','11px').text(yr);
   }
@@ -771,65 +899,55 @@ function drawTimeline(){
   const eventGroups=svg.selectAll('.event').data(timelineData).enter().append('g')
     .attr('class','event').attr('transform',(_,i)=>`translate(0,${margin.top+i*rowH})`);
 
-  // Connector line
-  eventGroups.append('line').attr('x1',x(d=>d.year)).attr('x2',x(d=>d.year))
-    .attr('x1',d=>x(d.year)).attr('x2',d=>x(d.year))
-    .attr('y1',0).attr('y2',rowH-10)
-    .attr('stroke',d=>companyColor(d.company)).attr('stroke-width',1).attr('stroke-opacity',0.3);
-
   // Dot
   eventGroups.append('circle')
     .attr('cx',d=>x(d.year)).attr('cy',rowH/2)
     .attr('r',0).attr('fill',d=>companyColor(d.company)).attr('stroke',d=>companyColorLight(d.company)).attr('stroke-width',2)
+    .style('cursor','pointer')
     .on('mouseover',function(e,d){
       d3.select(this).transition().duration(200).attr('r',10);
       showTooltip(e,d.event,d.company,`${typeIcon[d.type]||''} ${d.type.charAt(0).toUpperCase()+d.type.slice(1)}<br>Year: ${Math.floor(d.year)}`);
     })
     .on('mousemove',moveTooltip)
     .on('mouseout',function(){d3.select(this).transition().duration(200).attr('r',7);hideTooltip()})
-    .transition().duration(600).delay((_,i)=>i*80).attr('r',7);
+    .transition().duration(600).delay((_,i)=>i*60).attr('r',7);
 
   // Text label
   eventGroups.append('text')
-    .attr('x',d=>{
-      const px=x(d.year);
-      return px>W/2?px-14:px+14;
-    })
+    .attr('x',d=>{const px=x(d.year);return px>W*0.55?px-14:px+14})
     .attr('y',rowH/2+4)
-    .attr('text-anchor',d=>x(d.year)>W/2?'end':'start')
+    .attr('text-anchor',d=>x(d.year)>W*0.55?'end':'start')
     .attr('fill','#e2e8f0').attr('font-size',isMobile?'9px':'11px').attr('font-weight','500')
     .attr('opacity',0)
-    .text(d=>d.event.length>(isMobile?40:80)?d.event.slice(0,isMobile?37:77)+'…':d.event)
-    .transition().delay((_,i)=>300+i*80).duration(500).attr('opacity',1);
+    .text(d=>{const maxLen=isMobile?35:75;return d.event.length>maxLen?d.event.slice(0,maxLen-3)+'…':d.event})
+    .transition().delay((_,i)=>200+i*60).duration(500).attr('opacity',1);
 }
 
 // ============================================================
-// 3. INVESTMENT BUBBLE CHART
+// 3. INVESTMENT BUBBLE CHART — Force-directed
 // ============================================================
 function drawInvestment(){
   const container=document.getElementById('investment-viz');
   container.innerHTML='';
   const W=container.clientWidth;
-  const H=Math.max(450,W*0.55);
+  const H=Math.max(450,W*0.5);
 
   const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
 
-  const rScale=d3.scaleSqrt().domain([0,d3.max(investments,d=>d.amount)]).range([15,Math.min(120,W/5)]);
-
-  // Force simulation
+  const rScale=d3.scaleSqrt().domain([0,d3.max(investments,d=>d.amount)]).range([18,Math.min(120,W/5)]);
   const nodes=investments.map(d=>({...d,r:rScale(d.amount)}));
 
   const sim=d3.forceSimulation(nodes)
-    .force('charge',d3.forceManyBody().strength(d=>-d.r*2))
+    .force('charge',d3.forceManyBody().strength(d=>-d.r*2.5))
     .force('center',d3.forceCenter(W/2,H/2))
-    .force('collision',d3.forceCollide().radius(d=>d.r+6))
-    .force('x',d3.forceX(W/2).strength(0.05))
-    .force('y',d3.forceY(H/2).strength(0.05))
+    .force('collision',d3.forceCollide().radius(d=>d.r+6).strength(0.9))
+    .force('x',d3.forceX(W/2).strength(0.06))
+    .force('y',d3.forceY(H/2).strength(0.06))
     .stop();
 
-  for(let i=0;i<200;i++) sim.tick();
+  for(let i=0;i<300;i++) sim.tick();
 
-  // Radial gradient defs
+  // Radial gradients
   const defs=svg.append('defs');
   ['SpaceX','Blue Origin','Amazon','ASTS'].forEach(c=>{
     const grad=defs.append('radialGradient').attr('id','grad-'+c.replace(/\s/g,'')).attr('cx','35%').attr('cy','35%');
@@ -853,29 +971,29 @@ function drawInvestment(){
     .on('mouseout',function(e,d){
       d3.select(this).transition().duration(200).attr('r',d.r).attr('stroke-opacity',0.5);hideTooltip();
     })
-    .transition().duration(800).delay((_,i)=>i*100).ease(d3.easeElasticOut.amplitude(1).period(0.5))
+    .transition().duration(800).delay((_,i)=>i*80).ease(d3.easeElasticOut.amplitude(1).period(0.5))
     .attr('r',d=>d.r);
 
   // Labels
   bubbles.append('text')
     .attr('x',d=>d.x).attr('y',d=>d.y-4)
     .attr('text-anchor','middle').attr('fill','#f1f5f9')
-    .attr('font-size',d=>d.r>50?'13px':d.r>30?'10px':'8px')
+    .attr('font-size',d=>d.r>50?'14px':d.r>30?'11px':'8px')
     .attr('font-weight','700').attr('opacity',0).attr('pointer-events','none')
     .text(d=>fmtDollars(d.amount))
-    .transition().delay((_,i)=>500+i*100).duration(500).attr('opacity',1);
+    .transition().delay((_,i)=>500+i*80).duration(500).attr('opacity',1);
 
   bubbles.append('text')
     .attr('x',d=>d.x).attr('y',d=>d.y+12)
     .attr('text-anchor','middle').attr('fill','#94a3b8')
-    .attr('font-size',d=>d.r>50?'10px':d.r>30?'8px':'0px')
+    .attr('font-size',d=>d.r>50?'10px':d.r>30?'8px':'0')
     .attr('opacity',0).attr('pointer-events','none')
     .text(d=>d.r>30?d.name.split(' ').slice(0,3).join(' '):'')
-    .transition().delay((_,i)=>600+i*100).duration(500).attr('opacity',1);
+    .transition().delay((_,i)=>600+i*80).duration(500).attr('opacity',1);
 }
 
 // ============================================================
-// 4. SATELLITE CONSTELLATION
+// 4. CONSTELLATION WARS — Satellite bars + Antenna tab
 // ============================================================
 let currentSatTab='count';
 
@@ -883,55 +1001,53 @@ function drawSatellites(){
   const container=document.getElementById('satellite-viz');
   container.innerHTML='';
   const W=container.clientWidth;
-
   if(currentSatTab==='count') drawSatCount(container,W);
   else drawSatAntenna(container,W);
 }
 
 function drawSatCount(container,W){
-  const H=Math.max(400,W*0.5);
+  const H=Math.max(400,W*0.45);
   const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
-  const margin={top:60,right:40,bottom:80,left:40};
-
+  const margin={top:60,right:40,bottom:80,left:50};
   const data=satellites;
   const barWidth=(W-margin.left-margin.right)/data.length;
-
   const y=d3.scaleLinear().domain([0,45000]).range([H-margin.bottom,margin.top]);
 
-  // Grid lines
   [0,10000,20000,30000,40000].forEach(v=>{
     svg.append('line').attr('x1',margin.left).attr('x2',W-margin.right)
       .attr('y1',y(v)).attr('y2',y(v)).attr('stroke','rgba(148,163,184,0.08)');
-    svg.append('text').attr('x',margin.left-5).attr('y',y(v)+4)
+    svg.append('text').attr('x',margin.left-8).attr('y',y(v)+4)
       .attr('text-anchor','end').attr('fill','#64748b').attr('font-size','10px').text(fmt(v));
   });
 
   const groups=svg.selectAll('.sat-bar').data(data).enter().append('g')
     .attr('transform',(_,i)=>`translate(${margin.left+i*barWidth+barWidth*0.15},0)`);
 
-  // Planned bar (ghost)
+  // Planned (ghost bar)
   groups.append('rect')
     .attr('y',d=>y(d.planned)).attr('width',barWidth*0.7)
     .attr('height',0)
-    .attr('rx',4).attr('fill',d=>companyColor(d.company)).attr('fill-opacity',0.15)
+    .attr('rx',4).attr('fill',d=>companyColor(d.company)).attr('fill-opacity',0.12)
     .attr('stroke',d=>companyColor(d.company)).attr('stroke-width',1).attr('stroke-opacity',0.3).attr('stroke-dasharray','4,3')
     .transition().duration(1000).delay((_,i)=>i*200)
     .attr('height',d=>H-margin.bottom-y(d.planned));
 
-  // Deployed bar
+  // Deployed (solid bar)
   groups.append('rect')
     .attr('y',d=>y(d.deployed)).attr('width',barWidth*0.7)
     .attr('height',0)
     .attr('rx',4).attr('fill',d=>companyColor(d.company)).attr('fill-opacity',0.6)
+    .style('cursor','pointer')
     .on('mouseover',function(e,d){
-      showTooltip(e,d.name,d.company,`<strong>Planned:</strong> ${d.planned.toLocaleString()}<br><strong>Deployed:</strong> ${d.deployed.toLocaleString()}<br><strong>Mass each:</strong> ${d.mass} kg<br>${d.note}`);
+      showTooltip(e,d.name,d.company,
+        `<strong>Planned:</strong> ${d.planned.toLocaleString()}<br><strong>Deployed:</strong> ${d.deployed.toLocaleString()}<br><strong>Mass each:</strong> ${d.mass} kg<br>${d.note}`);
     })
     .on('mousemove',moveTooltip)
-    .on('mouseout',function(){hideTooltip()})
+    .on('mouseout',hideTooltip)
     .transition().duration(1000).delay((_,i)=>200+i*200)
     .attr('height',d=>d.deployed>0?Math.max(4,H-margin.bottom-y(d.deployed)):0);
 
-  // Labels
+  // Labels below
   groups.append('text')
     .attr('x',barWidth*0.35).attr('y',H-margin.bottom+20)
     .attr('text-anchor','middle').attr('fill','#e2e8f0').attr('font-size','13px').attr('font-weight','600')
@@ -940,6 +1056,12 @@ function drawSatCount(container,W){
     .attr('x',barWidth*0.35).attr('y',H-margin.bottom+36)
     .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','10px')
     .text(d=>`${d.planned.toLocaleString()} planned`);
+  groups.append('text')
+    .attr('x',barWidth*0.35).attr('y',H-margin.bottom+50)
+    .attr('text-anchor','middle').attr('fill',d=>companyColorLight(d.company)).attr('font-size','10px').attr('font-weight','600')
+    .text(d=>`${d.deployed.toLocaleString()} deployed`);
+
+  // Top number
   groups.append('text')
     .attr('x',barWidth*0.35).attr('y',d=>y(d.planned)-8)
     .attr('text-anchor','middle').attr('fill',d=>companyColorLight(d.company)).attr('font-size','14px').attr('font-weight','700')
@@ -957,7 +1079,6 @@ function drawSatAntenna(container,W){
   const H=Math.max(350,W*0.4);
   const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
 
-  // Compare BlueBird antenna (2,400 sq ft) vs ISS solar array panel vs normal satellite
   const antennaData=[
     {name:'ASTS BlueBird Antenna',sqft:2400,color:COLORS.ASTS,company:'ASTS',note:'Largest commercial phased-array ever built — 2,400 sq ft per satellite'},
     {name:'ISS Solar Array (one wing)',sqft:2700,color:'#94a3b8',company:'Reference',note:'Each of 8 ISS solar array wings — for scale comparison'},
@@ -967,10 +1088,7 @@ function drawSatAntenna(container,W){
 
   const maxSqft=3000;
   const scale=d=>Math.sqrt(d/maxSqft)*(Math.min(W,500)*0.4);
-
   const cx=W/2,cy=H/2;
-
-  // Draw each as a square, centered
   const sorted=[...antennaData].sort((a,b)=>b.sqft-a.sqft);
 
   sorted.forEach((d,i)=>{
@@ -979,7 +1097,7 @@ function drawSatAntenna(container,W){
     const yPos=cy-size/2;
 
     svg.append('rect')
-      .attr('x',xPos).attr('y',yPos).attr('width',0).attr('height',0)
+      .attr('x',cx).attr('y',cy).attr('width',0).attr('height',0)
       .attr('rx',4)
       .attr('fill',d.color).attr('fill-opacity',d.company==='Reference'?0.08:0.2)
       .attr('stroke',d.color).attr('stroke-width',d.company==='Reference'?1:2)
@@ -997,10 +1115,9 @@ function drawSatAntenna(container,W){
       .transition().duration(800).delay(i*150).ease(d3.easeCubicOut)
       .attr('x',xPos).attr('y',yPos).attr('width',size).attr('height',size);
 
-    // Label
-    const labelY= i===0 ? yPos-8 : (i===1 ? yPos+size+16 : yPos+size/2+4);
-    const labelX= i<2 ? cx : (i===2 ? cx+size/2+10 : cx-size/2-10);
-    const anchor= i<2 ? 'middle' : (i===2 ? 'start' : 'end');
+    const labelY=i===0?yPos-8:(i===1?yPos+size+16:yPos+size/2+4);
+    const labelX=i<2?cx:(i===2?cx+size/2+10:cx-size/2-10);
+    const anchor=i<2?'middle':(i===2?'start':'end');
 
     svg.append('text')
       .attr('x',labelX).attr('y',labelY)
@@ -1022,184 +1139,148 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 });
 
 // ============================================================
-// 5. ROCKET COMPARISON VISUALIZATION
+// 5. ROCKET COMPARISON — Better silhouettes
 // ============================================================
-const rocketData = [
-  {name:'Starship',sub:'Super Heavy + Ship',company:'SpaceX',height:121,heightFt:398,diameter:9,
-   thrustKN:80000,thrustLbf:'17M',engines:'33+6 Raptor',payloadLEO:'150–200t',
-   firstFlight:'2024',reusable:'Both stages ("chopstick" catch)',thermalGW:224,
-   color:'#0ea5e9',note:'Tallest and most powerful rocket ever flown'},
-  {name:'Saturn V',sub:'Historical',company:'NASA',height:111,heightFt:363,diameter:10,
-   thrustKN:35100,thrustLbf:'7.9M',engines:'5 F-1',payloadLEO:'140t',
-   firstFlight:'1967',reusable:'No (expendable)',thermalGW:190,
-   color:'#94a3b8',note:'Moon rocket — flew 1967–1973'},
-  {name:'SLS',sub:'Block 1',company:'NASA',height:98,heightFt:322,diameter:8.4,
-   thrustKN:39000,thrustLbf:'8.8M',engines:'4 RS-25 + 2 SRBs',payloadLEO:'95t',
-   firstFlight:'Nov 2022',reusable:'No (fully expendable)',thermalGW:100,
-   color:'#f97316',note:'Artemis program — ~$2.2B per launch'},
-  {name:'New Glenn',sub:'',company:'Blue Origin',height:98,heightFt:322,diameter:7,
-   thrustKN:17000,thrustLbf:'3.85M',engines:'7 BE-4',payloadLEO:'45t',
-   firstFlight:'Jan 2025',reusable:'First stage only',thermalGW:46,
-   color:'#38bdf8',note:'Blue Origin\'s orbital-class heavy-lift rocket'},
-  {name:'Falcon 9',sub:'Block 5',company:'SpaceX',height:70,heightFt:229,diameter:3.7,
-   thrustKN:7600,thrustLbf:'1.7M',engines:'9 Merlin',payloadLEO:'22.8t',
-   firstFlight:'2010',reusable:'First stage',thermalGW:16,
-   color:'#64748b',note:'300+ flights — most-launched active rocket'},
-];
-
-const landmarkData = [
-  {name:'London Eye',height:135,icon:'🎡',color:'#94a3b8'},
-  {name:'Starship',height:121,icon:'🚀',color:'#0ea5e9',isRocket:true},
-  {name:'St Paul\'s Cathedral',height:111,icon:'⛪',color:'#94a3b8'},
-  {name:'Saturn V',height:111,icon:'🚀',color:'#78716c',isRocket:true},
-  {name:'New Glenn',height:98,icon:'🚀',color:'#38bdf8',isRocket:true},
-  {name:'SLS',height:98,icon:'🚀',color:'#f97316',isRocket:true},
-  {name:'Big Ben',height:96,icon:'🕐',color:'#94a3b8'},
-  {name:'Statue of Liberty',height:93,icon:'🗽',color:'#94a3b8'},
-  {name:'Falcon 9',height:70,icon:'🚀',color:'#64748b',isRocket:true},
-  {name:'Tower Bridge',height:65,icon:'🌉',color:'#94a3b8'},
-  {name:'Leaning Tower\nof Pisa',height:56,icon:'🏛️',color:'#94a3b8'},
-  {name:'Nelson\'s Column',height:52,icon:'🏛️',color:'#94a3b8'},
-];
-
-const powerComparisons = [
-  {icon:'⚡',headline:'19% of the entire US power grid',detail:'The US grid capacity is ~1,200 GW. Starship at launch produces 224 GW — nearly a fifth of it.', value:'224 GW'},
-  {icon:'☢️',headline:'224 nuclear reactors firing at once',detail:'Each Raptor engine\'s thermal output exceeds an entire nuclear power plant (~1 GW). Starship has 33 on the booster alone.', value:'224×'},
-  {icon:'🇬🇧',headline:'Three entire UK power grids',detail:'The UK grid capacity is ~76 GW. Starship could power all of Britain three times over — from a single launch.', value:'3× UK'},
-  {icon:'🏎️',headline:'150,000 Formula 1 cars at full throttle',detail:'An F1 car produces about 1.5 MW at peak power. You\'d need 150,000 of them to match one Starship launch.', value:'150K'},
-  {icon:'🏗️',headline:'60 Hoover Dams',detail:'Hoover Dam generates ~2.08 GW when running full bore. Starship equals about 60 of them. For 8 minutes.', value:'60×'},
-  {icon:'🌙',headline:'18% more powerful than Saturn V',detail:'The mighty Saturn V produced ~190 GW. Starship surpasses the Moon rocket by nearly a fifth.', value:'+18%'},
-];
-
 function drawRockets(){
   const container=document.getElementById('rockets-viz');
   container.innerHTML='';
   const W=container.clientWidth;
   const isMobile=W<600;
-  const margin={top:20,right:20,bottom:60,left:20};
-  const rocketW=Math.min((W-margin.left-margin.right)/rocketData.length, isMobile?80:160);
+  const margin={top:20,right:20,bottom:65,left:20};
+  const rocketW=Math.min((W-margin.left-margin.right)/rocketData.length, isMobile?75:155);
   const chartW=rocketW*rocketData.length;
   const offsetX=(W-chartW)/2;
-  const maxH=121;
-  const barArea=Math.min(500, W*0.55);
+  const maxH=121.3;
+  const barArea=Math.min(480,W*0.52);
   const hScale=d3.scaleLinear().domain([0,maxH]).range([0,barArea]);
   const H=barArea+margin.top+margin.bottom+60;
+  const ground=margin.top+barArea;
 
   const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
-  const ground=margin.top+barArea;
 
   // Ground line
   svg.append('line').attr('x1',0).attr('x2',W).attr('y1',ground).attr('y2',ground)
     .attr('stroke','rgba(148,163,184,0.15)').attr('stroke-width',1);
 
-  // Height reference lines
-  [50,100,121].forEach(h=>{
+  // Height ref lines
+  [50,100,121.3].forEach(h=>{
     const y=ground-hScale(h);
     svg.append('line').attr('x1',margin.left).attr('x2',W-margin.right)
-      .attr('y1',y).attr('y2',y).attr('stroke','rgba(148,163,184,0.06)').attr('stroke-width',1)
-      .attr('stroke-dasharray','4,6');
+      .attr('y1',y).attr('y2',y).attr('stroke','rgba(148,163,184,0.06)').attr('stroke-dasharray','4,6');
     svg.append('text').attr('x',margin.left-4).attr('y',y+4)
-      .attr('text-anchor','end').attr('fill','#475569').attr('font-size','9px').text(h+'m');
+      .attr('text-anchor','end').attr('fill','#475569').attr('font-size','9px').text(Math.round(h)+'m');
   });
+
+  const defs=svg.append('defs');
 
   rocketData.forEach((r,i)=>{
     const cx=offsetX+i*rocketW+rocketW/2;
-    const bw=Math.min(rocketW*0.5, r.diameter*4);
     const bh=hScale(r.height);
+    // Wider boosters for realism
+    const boosterW=Math.min(rocketW*0.5, r.diameter*4.5);
+    const upperW=boosterW*(r.name==='Starship'?0.95:r.name==='Falcon 9'?0.8:0.85);
 
     const g=svg.append('g').attr('class','rocket-silhouette');
 
-    // Rocket body
-    const bodyGrad=svg.append('defs').append('linearGradient')
-      .attr('id',`rgrad-${i}`).attr('x1','0%').attr('x2','100%');
-    bodyGrad.append('stop').attr('offset','0%').attr('stop-color',r.color).attr('stop-opacity',0.5);
-    bodyGrad.append('stop').attr('offset','50%').attr('stop-color',r.color).attr('stop-opacity',0.8);
-    bodyGrad.append('stop').attr('offset','100%').attr('stop-color',r.color).attr('stop-opacity',0.5);
+    // Body gradient
+    const bodyGrad=defs.append('linearGradient').attr('id',`rgrad-${i}`).attr('x1','0%').attr('x2','100%');
+    bodyGrad.append('stop').attr('offset','0%').attr('stop-color',r.color).attr('stop-opacity',0.4);
+    bodyGrad.append('stop').attr('offset','40%').attr('stop-color',r.color).attr('stop-opacity',0.85);
+    bodyGrad.append('stop').attr('offset','100%').attr('stop-color',r.color).attr('stop-opacity',0.4);
 
-    // Nose cone (triangle)
-    const noseH=bh*0.12;
-    const bodyY=ground-bh+noseH;
-    const noseY=ground-bh;
+    const noseH=bh*0.1;
+    const boosterH=bh*0.4;
+    const upperH=bh-noseH-boosterH;
+    const boosterTop=ground-boosterH;
+    const upperTop=boosterTop-upperH;
+    const noseTop=upperTop-noseH;
 
-    g.append('polygon')
-      .attr('points',`${cx},${noseY} ${cx-bw/2},${bodyY} ${cx+bw/2},${bodyY}`)
-      .attr('fill',`url(#rgrad-${i})`).attr('opacity',0)
-      .transition().duration(800).delay(i*150).attr('opacity',1);
-
-    // Body rectangle
+    // Booster (wider base)
     g.append('rect')
-      .attr('x',cx-bw/2).attr('y',bodyY)
-      .attr('width',bw).attr('height',0)
-      .attr('fill',`url(#rgrad-${i})`).attr('rx',2)
-      .transition().duration(1000).delay(i*150).ease(d3.easeCubicOut)
-      .attr('height',bh-noseH);
+      .attr('x',cx-boosterW/2).attr('y',ground)
+      .attr('width',boosterW).attr('height',0)
+      .attr('fill',`url(#rgrad-${i})`).attr('rx',1)
+      .transition().duration(900).delay(i*120).ease(d3.easeCubicOut)
+      .attr('y',boosterTop).attr('height',boosterH);
 
-    // Booster separation line (for 2-stage rockets)
-    if(r.name!=='Saturn V'){
-      const sepY=ground-bh*0.35;
-      g.append('line').attr('x1',cx-bw/2).attr('x2',cx+bw/2)
-        .attr('y1',sepY).attr('y2',sepY)
-        .attr('stroke','rgba(255,255,255,0.2)').attr('stroke-width',0.5)
-        .attr('opacity',0).transition().delay(800+i*150).duration(400).attr('opacity',1);
+    // Interstage taper
+    const taperH=bh*0.03;
+    g.append('polygon')
+      .attr('points',`${cx-boosterW/2},${boosterTop} ${cx+boosterW/2},${boosterTop} ${cx+upperW/2},${boosterTop-taperH} ${cx-upperW/2},${boosterTop-taperH}`)
+      .attr('fill',`url(#rgrad-${i})`).attr('opacity',0)
+      .transition().duration(400).delay(400+i*120).attr('opacity',1);
+
+    // Upper stage (narrower)
+    g.append('rect')
+      .attr('x',cx-upperW/2).attr('y',boosterTop-taperH)
+      .attr('width',upperW).attr('height',0)
+      .attr('fill',`url(#rgrad-${i})`).attr('rx',1)
+      .transition().duration(700).delay(200+i*120).ease(d3.easeCubicOut)
+      .attr('y',upperTop).attr('height',upperH);
+
+    // Nose cone (curved)
+    const nosePath=`M${cx-upperW/2},${upperTop} Q${cx-upperW/3},${noseTop+noseH*0.3} ${cx},${noseTop} Q${cx+upperW/3},${noseTop+noseH*0.3} ${cx+upperW/2},${upperTop} Z`;
+    g.append('path').attr('d',nosePath)
+      .attr('fill',`url(#rgrad-${i})`).attr('opacity',0)
+      .transition().duration(500).delay(500+i*120).attr('opacity',1);
+
+    // Grid fins / side boosters for SLS
+    if(r.name==='SLS'){
+      const srbW=boosterW*0.25;
+      [-1,1].forEach(side=>{
+        g.append('rect')
+          .attr('x',cx+side*(boosterW/2+srbW*0.3)-srbW/2).attr('y',ground)
+          .attr('width',srbW).attr('height',0)
+          .attr('fill',r.color).attr('fill-opacity',0.5).attr('rx',1)
+          .transition().duration(800).delay(200+i*120)
+          .attr('y',ground-boosterH*0.85).attr('height',boosterH*0.85);
+      });
     }
 
-    // Exhaust glow (animated)
-    const exhaustGrad=svg.append('defs').append('radialGradient')
-      .attr('id',`exhaust-${i}`).attr('cx','50%').attr('cy','0%').attr('r','100%');
-    exhaustGrad.append('stop').attr('offset','0%').attr('stop-color',r.color).attr('stop-opacity',0.6);
-    exhaustGrad.append('stop').attr('offset','100%').attr('stop-color',r.color).attr('stop-opacity',0);
-
+    // Exhaust glow
+    const exGrad=defs.append('radialGradient').attr('id',`ex-${i}`).attr('cx','50%').attr('cy','0%').attr('r','100%');
+    exGrad.append('stop').attr('offset','0%').attr('stop-color',r.color).attr('stop-opacity',0.6);
+    exGrad.append('stop').attr('offset','100%').attr('stop-color',r.color).attr('stop-opacity',0);
     g.append('ellipse').attr('cx',cx).attr('cy',ground+8)
-      .attr('rx',bw*0.6).attr('ry',12)
-      .attr('fill',`url(#exhaust-${i})`).attr('opacity',0)
-      .transition().delay(1000+i*150).duration(600).attr('opacity',0.7);
+      .attr('rx',boosterW*0.6).attr('ry',12)
+      .attr('fill',`url(#ex-${i})`).attr('opacity',0)
+      .transition().delay(900+i*120).duration(600).attr('opacity',0.7);
 
-    // Hover target (invisible wider rect)
+    // Invisible hover target
     g.append('rect')
-      .attr('x',cx-rocketW/2).attr('y',noseY-10).attr('width',rocketW).attr('height',bh+30)
+      .attr('x',cx-rocketW/2).attr('y',noseTop-10).attr('width',rocketW).attr('height',bh+30)
       .attr('fill','transparent').style('cursor','pointer')
       .on('mouseover',function(e){
         showTooltip(e,`${r.name} ${r.sub}`,r.company,
           `<strong>${r.height}m (${r.heightFt} ft)</strong> tall · ${r.diameter}m diameter<br>`+
           `Thrust: <strong>${r.thrustLbf} lbf</strong> (${(r.thrustKN/1000).toFixed(0)}K kN)<br>`+
-          `Engines: ${r.engines}<br>`+
-          `Payload to LEO: <strong>${r.payloadLEO}</strong><br>`+
-          `First flight: ${r.firstFlight}<br>`+
-          `Reusable: ${r.reusable}<br><br>`+
-          `<em>${r.note}</em>`);
+          `Engines: ${r.engines}<br>Payload to LEO: <strong>${r.payloadLEO}</strong><br>`+
+          `First flight: ${r.firstFlight}<br>Reusable: ${r.reusable}<br><br><em>${r.note}</em>`);
       })
-      .on('mousemove',moveTooltip)
-      .on('mouseout',hideTooltip);
+      .on('mousemove',moveTooltip).on('mouseout',hideTooltip);
 
     // Name label
-    g.append('text').attr('x',cx).attr('y',ground+30)
+    g.append('text').attr('x',cx).attr('y',ground+28)
       .attr('text-anchor','middle').attr('fill',r.color).attr('font-size',isMobile?'10px':'13px')
       .attr('font-weight','700').attr('font-family','Space Grotesk,sans-serif')
       .attr('opacity',0).text(r.name)
-      .transition().delay(600+i*150).duration(500).attr('opacity',1);
-
-    // Height label
-    g.append('text').attr('x',cx).attr('y',ground+44)
+      .transition().delay(600+i*120).duration(500).attr('opacity',1);
+    g.append('text').attr('x',cx).attr('y',ground+42)
       .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size',isMobile?'8px':'10px')
       .attr('opacity',0).text(`${r.height}m / ${r.heightFt}ft`)
-      .transition().delay(700+i*150).duration(500).attr('opacity',1);
+      .transition().delay(700+i*120).duration(500).attr('opacity',1);
 
-    // Payload badge
     if(!isMobile){
-      g.append('text').attr('x',cx).attr('y',noseY-14)
-        .attr('text-anchor','middle').attr('fill',r.color).attr('font-size','11px').attr('font-weight','600')
+      g.append('text').attr('x',cx).attr('y',noseTop-12)
+        .attr('text-anchor','middle').attr('fill',r.color).attr('font-size','10px').attr('font-weight','600')
         .attr('opacity',0).text(r.payloadLEO+' to LEO')
-        .transition().delay(900+i*150).duration(500).attr('opacity',0.8);
+        .transition().delay(800+i*120).duration(500).attr('opacity',0.8);
     }
   });
-
-  // Thrust comparison bar chart at bottom
-  const thrustY=ground+60;
-  svg.attr('viewBox',`0 0 ${W} ${H}`);
 }
 
 // ============================================================
-// 5b. LANDMARK HEIGHT COMPARISON
+// 6. LANDMARKS HEIGHT COMPARISON
 // ============================================================
 function drawLandmarks(){
   const container=document.getElementById('landmarks-viz');
@@ -1207,83 +1288,80 @@ function drawLandmarks(){
   const W=container.clientWidth;
   const isMobile=W<600;
   const margin={top:10,right:10,bottom:70,left:10};
-  const itemW=Math.min((W-margin.left-margin.right)/landmarkData.length, isMobile?55:100);
+  const itemW=Math.min((W-margin.left-margin.right)/landmarkData.length, isMobile?52:95);
   const chartW=itemW*landmarkData.length;
   const offsetX=Math.max(0,(W-chartW)/2);
   const maxH=140;
-  const barArea=Math.min(420,W*0.48);
+  const barArea=Math.min(400,W*0.45);
   const hScale=d3.scaleLinear().domain([0,maxH]).range([0,barArea]);
   const H=barArea+margin.top+margin.bottom+20;
   const ground=margin.top+barArea;
 
   const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
 
-  // Ground
   svg.append('line').attr('x1',0).attr('x2',W).attr('y1',ground).attr('y2',ground)
     .attr('stroke','rgba(148,163,184,0.15)').attr('stroke-width',1);
 
   landmarkData.forEach((d,i)=>{
     const cx=offsetX+i*itemW+itemW/2;
     const bh=hScale(d.height);
-    const bw=d.isRocket?Math.min(itemW*0.35,18):Math.min(itemW*0.55,36);
-    const g=svg.append('g').attr('class','landmark-silhouette');
+    const bw=d.isRocket?Math.min(itemW*0.3,16):Math.min(itemW*0.5,32);
+    const g=svg.append('g');
 
     if(d.isRocket){
-      // Rocket shape
       const noseH=bh*0.1;
       const bodyY=ground-bh+noseH;
-      g.append('polygon')
-        .attr('points',`${cx},${ground-bh} ${cx-bw/2},${bodyY} ${cx+bw/2},${bodyY}`)
-        .attr('fill',d.color).attr('fill-opacity',0.7);
+      // Nose
+      const nosePath=`M${cx-bw/2},${bodyY} Q${cx},${ground-bh-2} ${cx+bw/2},${bodyY} Z`;
+      g.append('path').attr('d',nosePath).attr('fill',d.color).attr('fill-opacity',0.7);
+      // Body
       g.append('rect').attr('x',cx-bw/2).attr('y',bodyY).attr('width',bw)
         .attr('height',0).attr('fill',d.color).attr('fill-opacity',0.7).attr('rx',1)
-        .transition().duration(1000).delay(i*80).ease(d3.easeCubicOut)
+        .transition().duration(900).delay(i*60).ease(d3.easeCubicOut)
         .attr('height',bh-noseH);
     } else {
-      // Landmark: outlined bar
       g.append('rect').attr('x',cx-bw/2).attr('y',ground)
         .attr('width',bw).attr('height',0)
-        .attr('fill',d.color).attr('fill-opacity',0.08)
-        .attr('stroke',d.color).attr('stroke-width',1.5).attr('stroke-opacity',0.35)
+        .attr('fill',d.color).attr('fill-opacity',0.06)
+        .attr('stroke',d.color).attr('stroke-width',1.5).attr('stroke-opacity',0.3)
         .attr('stroke-dasharray','6,3').attr('rx',3)
-        .transition().duration(1000).delay(i*80).ease(d3.easeCubicOut)
+        .transition().duration(900).delay(i*60).ease(d3.easeCubicOut)
         .attr('y',ground-bh).attr('height',bh);
     }
 
-    // Height label on top
+    // Height
     g.append('text').attr('x',cx).attr('y',ground-bh-6)
-      .attr('text-anchor','middle').attr('fill',d.color).attr('font-size',isMobile?'7px':'10px')
-      .attr('font-weight','600').attr('opacity',0)
-      .text(d.height+'m')
-      .transition().delay(500+i*80).duration(500).attr('opacity',0.9);
+      .attr('text-anchor','middle').attr('fill',d.color).attr('font-size',isMobile?'7px':'9px')
+      .attr('font-weight','600').attr('opacity',0).text(d.height+'m')
+      .transition().delay(400+i*60).duration(500).attr('opacity',0.9);
 
     // Icon
-    g.append('text').attr('x',cx).attr('y',ground+18)
-      .attr('text-anchor','middle').attr('font-size',isMobile?'14px':'20px')
+    g.append('text').attr('x',cx).attr('y',ground+16)
+      .attr('text-anchor','middle').attr('font-size',isMobile?'13px':'18px')
       .attr('opacity',0).text(d.icon)
-      .transition().delay(300+i*80).duration(400).attr('opacity',1);
+      .transition().delay(200+i*60).duration(400).attr('opacity',1);
 
     // Name
     const nameLines=d.name.split('\n');
     nameLines.forEach((line,li)=>{
-      g.append('text').attr('x',cx).attr('y',ground+34+li*12)
+      g.append('text').attr('x',cx).attr('y',ground+30+li*11)
         .attr('text-anchor','middle').attr('fill',d.isRocket?d.color:'#64748b')
-        .attr('font-size',isMobile?'7px':'9px').attr('font-weight',d.isRocket?'600':'400')
+        .attr('font-size',isMobile?'6px':'8px').attr('font-weight',d.isRocket?'600':'400')
         .attr('opacity',0).text(line)
-        .transition().delay(400+i*80).duration(400).attr('opacity',0.9);
+        .transition().delay(300+i*60).duration(400).attr('opacity',0.9);
     });
 
     // Tooltip
     g.append('rect').attr('x',cx-itemW/2).attr('y',ground-bh-10).attr('width',itemW).attr('height',bh+50)
       .attr('fill','transparent').style('cursor','pointer')
-      .on('mouseover',(e)=>showTooltip(e,d.name.replace('\n',' '),d.isRocket?'Rocket':'Landmark',
+      .on('mouseover',(e)=>showTooltip(e,d.name.replace(/\n/g,' '),d.isRocket?'Rocket':'Landmark',
         `<strong>${d.height}m (${Math.round(d.height*3.281)} ft)</strong>`))
       .on('mousemove',moveTooltip).on('mouseout',hideTooltip);
   });
 }
 
 // ============================================================
-// 5c. POWER OUTPUT VISUALIZATION
+// 7. POWER OUTPUT — Big counter + bars + comparison cards
 // ============================================================
 function drawPower(){
   const container=document.getElementById('power-viz');
@@ -1294,28 +1372,20 @@ function drawPower(){
   // Big wow counter
   const counterDiv=document.createElement('div');
   counterDiv.innerHTML=`
-    <div class="wow-counter" id="power-counter">0</div>
+    <div class="wow-counter" id="power-counter-num">0</div>
     <div class="wow-label">gigawatts of thermal power at launch — from a single Starship</div>
   `;
   container.appendChild(counterDiv);
 
-  // Animate the counter
-  let counted=false;
-  const cObs=new IntersectionObserver((entries)=>{
-    if(entries[0].isIntersecting&&!counted){
-      counted=true;
-      const el=document.getElementById('power-counter');
-      let v=0;const target=224;
-      const step=target/80;
-      const iv=setInterval(()=>{
-        v+=step;if(v>=target){v=target;clearInterval(iv)}
-        el.textContent=Math.round(v);
-      },20);
-    }
-  },{threshold:0.3});
-  cObs.observe(counterDiv);
+  // Animate counter immediately
+  const el=document.getElementById('power-counter-num');
+  let v=0;const target=224;const step=target/80;
+  const iv=setInterval(()=>{
+    v+=step;if(v>=target){v=target;clearInterval(iv)}
+    el.textContent=Math.round(v);
+  },20);
 
-  // Power bars SVG
+  // Power bars
   const barData=[
     {name:'Starship',gw:224,color:'#0ea5e9'},
     {name:'Saturn V',gw:190,color:'#94a3b8'},
@@ -1328,44 +1398,42 @@ function drawPower(){
     {name:'NYC power demand',gw:11,color:'rgba(251,191,36,0.4)'},
   ];
 
-  const barH=38;const barGap=12;const labelW=isMobile?90:140;const valueW=80;
+  const barH=36;const barGap=12;const labelW=isMobile?85:140;const valueW=80;
   const svgH=(barH+barGap)*barData.length+40;
   const barMaxW=W-labelW-valueW-40;
   const maxGW=230;
   const gwScale=d3.scaleLinear().domain([0,maxGW]).range([0,barMaxW]);
 
   const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${svgH}`).style('margin-top','1.5rem');
+  const defs=svg.append('defs');
 
   barData.forEach((d,i)=>{
     const y=i*(barH+barGap)+10;
 
-    // Label
     svg.append('text').attr('x',labelW-8).attr('y',y+barH/2+5)
       .attr('text-anchor','end').attr('fill',d.color).attr('font-size',isMobile?'11px':'14px')
       .attr('font-weight','700').attr('font-family','Space Grotesk,sans-serif').text(d.name);
 
-    // Track
     svg.append('rect').attr('x',labelW).attr('y',y).attr('width',barMaxW).attr('height',barH)
-      .attr('fill','rgba(148,163,184,0.06)').attr('rx',4);
+      .attr('fill','rgba(148,163,184,0.05)').attr('rx',4);
 
-    // Fill with shimmer
-    const fill=svg.append('rect').attr('x',labelW).attr('y',y)
+    // Bar fill
+    svg.append('rect').attr('x',labelW).attr('y',y)
       .attr('width',0).attr('height',barH)
-      .attr('fill',d.color).attr('fill-opacity',0.6).attr('rx',4);
-
-    fill.transition().duration(1500).delay(i*200).ease(d3.easeCubicOut)
+      .attr('fill',d.color).attr('fill-opacity',0.6).attr('rx',4)
+      .transition().duration(1200).delay(i*150).ease(d3.easeCubicOut)
       .attr('width',gwScale(d.gw));
 
-    // Shimmer overlay
+    // Shimmer
     const clipId=`pclip-${i}`;
-    svg.append('defs').append('clipPath').attr('id',clipId)
+    defs.append('clipPath').attr('id',clipId)
       .append('rect').attr('x',labelW).attr('y',y).attr('width',gwScale(d.gw)).attr('height',barH).attr('rx',4);
 
     const shimmer=svg.append('rect').attr('x',labelW-60).attr('y',y)
       .attr('width',60).attr('height',barH)
-      .attr('fill','rgba(255,255,255,0.1)').attr('clip-path',`url(#${clipId})`)
+      .attr('fill','rgba(255,255,255,0.08)').attr('clip-path',`url(#${clipId})`)
       .attr('opacity',0);
-    shimmer.transition().delay(1500+i*200).duration(0).attr('opacity',1)
+    shimmer.transition().delay(1200+i*150).duration(0).attr('opacity',1)
       .transition().duration(1500).ease(d3.easeLinear)
       .attr('x',labelW+gwScale(d.gw)+10)
       .on('end',function repeat(){
@@ -1374,33 +1442,28 @@ function drawPower(){
           .attr('x',labelW+gwScale(d.gw)+10).on('end',repeat);
       });
 
-    // Value
     svg.append('text').attr('x',labelW+gwScale(d.gw)+8).attr('y',y+barH/2+5)
       .attr('fill',d.color).attr('font-size','13px').attr('font-weight','700')
       .attr('font-family','Space Grotesk,sans-serif')
       .attr('opacity',0).text(d.gw+' GW')
-      .transition().delay(1200+i*200).duration(400).attr('opacity',1);
+      .transition().delay(1000+i*150).duration(400).attr('opacity',1);
   });
 
   // Reference lines
   refLines.forEach(r=>{
-    const x=labelW+gwScale(r.gw);
-    svg.append('line').attr('x1',x).attr('x2',x).attr('y1',0).attr('y2',svgH-10)
+    const xPos=labelW+gwScale(r.gw);
+    svg.append('line').attr('x1',xPos).attr('x2',xPos).attr('y1',0).attr('y2',svgH-10)
       .attr('stroke',r.color).attr('stroke-width',1.5).attr('stroke-dasharray','6,4');
-    svg.append('text').attr('x',x).attr('y',svgH-2)
+    svg.append('text').attr('x',xPos).attr('y',svgH-2)
       .attr('text-anchor','middle').attr('fill',r.color).attr('font-size','9px').attr('font-weight','500')
       .text(`← ${r.name} (${r.gw} GW)`);
   });
 }
 
-// ============================================================
-// 5d. THRUST MIND-BLOWING COMPARISONS (HTML cards)
-// ============================================================
 function drawThrustComparisons(){
   const container=document.getElementById('thrust-comparisons');
   if(container.dataset.drawn) return;
   container.dataset.drawn='1';
-
   container.innerHTML = powerComparisons.map(c=>`
     <div class="comparison-card">
       <div class="comparison-icon">${c.icon}</div>
@@ -1414,17 +1477,15 @@ function drawThrustComparisons(){
 }
 
 // ============================================================
-// 6. MAP VISUALIZATION
+// 8. MAP
 // ============================================================
 function drawMap(){
   const container=document.getElementById('map-viz');
   container.innerHTML='';
   const W=container.clientWidth;
-  const H=Math.max(500,W*0.65);
-
+  const H=Math.max(500,W*0.6);
   const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
 
-  // Simple mercator-like projection centered on Space Coast
   const centerLat=28.5,centerLon=-80.65;
   const zoomFactor=Math.min(W,800)*18;
 
@@ -1434,56 +1495,55 @@ function drawMap(){
     return [x,y];
   }
 
-  // Draw coastline (simplified)
+  // Simplified coastline
   const coastPoints=[
     [28.75,-80.55],[28.70,-80.52],[28.65,-80.54],[28.62,-80.58],
     [28.60,-80.57],[28.58,-80.59],[28.55,-80.56],[28.52,-80.54],
     [28.49,-80.53],[28.47,-80.53],[28.44,-80.55],[28.42,-80.58],
     [28.39,-80.60],[28.36,-80.61],[28.33,-80.63],[28.30,-80.62],
   ];
-  const landPoints=[
-    [28.75,-80.85],[28.75,-80.55],
-    ...coastPoints,
-    [28.30,-80.62],[28.30,-80.85]
-  ];
-
+  const landPoints=[[28.75,-80.85],[28.75,-80.55],...coastPoints,[28.30,-80.62],[28.30,-80.85]];
   const coastPath=d3.line().x(d=>project(d[0],d[1])[0]).y(d=>project(d[0],d[1])[1]).curve(d3.curveBasis);
 
   svg.append('path').datum(landPoints).attr('d',coastPath)
     .attr('fill','rgba(148,163,184,0.05)').attr('stroke','rgba(148,163,184,0.2)').attr('stroke-width',1);
 
-  // Indian River / Banana River (water between land and barrier island)
-  const waterPoints=[
-    [28.68,-80.58],[28.63,-80.60],[28.58,-80.61],[28.53,-80.59],
-    [28.48,-80.57],[28.43,-80.60],[28.38,-80.63],
-  ];
+  // Water
+  const waterPoints=[[28.68,-80.58],[28.63,-80.60],[28.58,-80.61],[28.53,-80.59],[28.48,-80.57],[28.43,-80.60],[28.38,-80.63]];
   svg.append('path').datum(waterPoints).attr('d',coastPath)
     .attr('fill','none').attr('stroke','rgba(56,189,248,0.15)').attr('stroke-width',3);
 
-  // KSC boundary (approximate)
-  const kscBoundary=[
-    [28.64,-80.70],[28.64,-80.58],[28.56,-80.58],[28.56,-80.65],[28.52,-80.65],[28.52,-80.70]
-  ];
+  // KSC boundary
+  const kscBoundary=[[28.64,-80.70],[28.64,-80.58],[28.56,-80.58],[28.56,-80.65],[28.52,-80.65],[28.52,-80.70]];
   svg.append('polygon')
     .attr('points',kscBoundary.map(p=>project(p[0],p[1]).join(',')).join(' '))
     .attr('fill','rgba(148,163,184,0.04)').attr('stroke','rgba(148,163,184,0.15)')
     .attr('stroke-width',1).attr('stroke-dasharray','8,4');
   const kscCenter=project(28.58,-80.64);
   svg.append('text').attr('x',kscCenter[0]).attr('y',kscCenter[1]-5)
-    .attr('text-anchor','middle').attr('fill','rgba(148,163,184,0.25)').attr('font-size','14px')
+    .attr('text-anchor','middle').attr('fill','rgba(148,163,184,0.2)').attr('font-size','14px')
     .attr('font-weight','700').attr('letter-spacing','0.15em').text('KENNEDY SPACE CENTER');
 
-  // 30-mile radius circle
+  // 30-mile radius
   const center30=project(centerLat,centerLon);
-  const edge30=project(centerLat+0.435,centerLon); // ~30 miles
+  const edge30=project(centerLat+0.435,centerLon);
   const r30=Math.abs(center30[1]-edge30[1]);
   svg.append('circle').attr('cx',center30[0]).attr('cy',center30[1]).attr('r',r30)
-    .attr('fill','none').attr('stroke','rgba(148,163,184,0.08)').attr('stroke-width',1).attr('stroke-dasharray','4,6');
+    .attr('fill','none').attr('stroke','rgba(148,163,184,0.08)').attr('stroke-dasharray','4,6');
   svg.append('text').attr('x',center30[0]+r30+5).attr('y',center30[1])
     .attr('fill','#475569').attr('font-size','9px').text('30-mile radius');
 
   // Location dots
-  const dots=svg.selectAll('.map-dot').data(mapLocations).enter().append('g').attr('class','map-dot');
+  const dots=svg.selectAll('.map-dot').data(mapLocations).enter().append('g');
+
+  // Pulse rings
+  mapLocations.filter(d=>d.r>=8).forEach(d=>{
+    const [px,py]=project(d.lat,d.lon);
+    const pulse=svg.append('circle').attr('cx',px).attr('cy',py).attr('r',d.r)
+      .attr('fill','none').attr('stroke',companyColor(d.company)).attr('stroke-width',1);
+    pulse.append('animate').attr('attributeName','r').attr('from',d.r).attr('to',d.r*3).attr('dur','3s').attr('repeatCount','indefinite');
+    pulse.append('animate').attr('attributeName','opacity').attr('from',0.4).attr('to',0).attr('dur','3s').attr('repeatCount','indefinite');
+  });
 
   dots.append('circle')
     .attr('cx',d=>project(d.lat,d.lon)[0]).attr('cy',d=>project(d.lat,d.lon)[1])
@@ -1502,72 +1562,28 @@ function drawMap(){
     .transition().duration(600).delay((_,i)=>i*80).ease(d3.easeElasticOut.amplitude(1).period(0.6))
     .attr('r',d=>d.r);
 
-  // Pulse animation on key locations
-  mapLocations.filter(d=>d.r>=8).forEach(d=>{
-    const [px,py]=project(d.lat,d.lon);
-    svg.append('circle').attr('cx',px).attr('cy',py).attr('r',d.r)
-      .attr('fill','none').attr('stroke',companyColor(d.company)).attr('stroke-width',1)
-      .attr('opacity',0.6)
-      .append('animate').attr('attributeName','r').attr('from',d.r).attr('to',d.r*3)
-      .attr('dur','3s').attr('repeatCount','indefinite');
-    svg.selectAll('circle:last-child animate').each(function(){
-      const circle=this.parentNode;
-      d3.select(circle).append('animate').attr('attributeName','opacity').attr('from',0.4).attr('to',0)
-        .attr('dur','3s').attr('repeatCount','indefinite');
-    });
-  });
-
-  // Labels (offset to avoid overlap)
   dots.append('text')
     .attr('x',d=>project(d.lat,d.lon)[0]+d.r+6)
     .attr('y',d=>project(d.lat,d.lon)[1]+4)
     .attr('fill','#94a3b8').attr('font-size','9px').attr('font-weight','500')
-    .attr('opacity',0)
-    .text(d=>d.name)
+    .attr('opacity',0).text(d=>d.name)
     .transition().delay((_,i)=>400+i*80).duration(500).attr('opacity',0.8);
 }
 
 // ============================================================
-// 7. SPACE RACE TIMELINE
+// 9. SPACE RACE TIMELINE
 // ============================================================
-const spaceRaceData = [
-  {year:1957,name:'Sputnik',detail:'R-7, USSR — first satellite in orbit',era:'cold-war'},
-  {year:1961,name:'Vostok 1',detail:'USSR — first human in space (Gagarin)',era:'cold-war'},
-  {year:1962,name:'Mercury-Atlas 6',detail:'USA — first American in orbit (Glenn)',era:'cold-war'},
-  {year:1967,name:'Saturn V',detail:'Most powerful rocket for 50+ years',era:'cold-war'},
-  {year:1969,name:'Apollo 11',detail:'Moon landing',era:'cold-war'},
-  {year:1981,name:'Space Shuttle',detail:'First reusable spacecraft',era:'shuttle'},
-  {year:1996,name:'Ariane 5',detail:'ESA — European heavy lift',era:'commercial'},
-  {year:2006,name:'Falcon 1',detail:'SpaceX — first private orbital attempt',era:'commercial'},
-  {year:2010,name:'Falcon 9 v1.0',detail:'SpaceX\'s breakthrough',era:'commercial'},
-  {year:2015,name:'Falcon 9 landing',detail:'Reusability proven',era:'commercial'},
-  {year:2018,name:'Falcon Heavy',detail:'Most powerful operational rocket',era:'new-space'},
-  {year:2022,name:'SLS / Artemis I',detail:'NASA\'s return to deep space',era:'new-space'},
-  {year:2024,name:'Starship orbital',detail:'Test flights begin',era:'new-space'},
-  {year:2025,name:'New Glenn',detail:'Blue Origin orbital (Jan)',era:'new-space'},
-  {year:2025.3,name:'Starship catch',detail:'Chopstick catch — full reusability',era:'new-space'},
-  {year:2026,name:'New Glenn-3',detail:'Carries ASTS BlueBird',era:'new-space'},
-];
-
-const eraColors = {
-  'cold-war':['#dc2626','#78716c'],
-  'shuttle':['#f97316','#ea580c'],
-  'commercial':['#0ea5e9','#10b981'],
-  'new-space':['#a78bfa','#38bdf8'],
-};
-
 function drawSpaceRace(){
   const container=document.getElementById('spacerace-viz');
   container.innerHTML='';
   const W=container.clientWidth;
   const isMobile=W<600;
   const margin={top:40,right:30,bottom:50,left:30};
-  const H=isMobile?500:320;
+  const H=isMobile?500:340;
 
   const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
   const defs=svg.append('defs');
 
-  // Era gradients
   Object.entries(eraColors).forEach(([era,colors])=>{
     const grad=defs.append('linearGradient').attr('id',`era-${era}`).attr('x1','0%').attr('x2','100%');
     grad.append('stop').attr('offset','0%').attr('stop-color',colors[0]);
@@ -1577,17 +1593,16 @@ function drawSpaceRace(){
   const x=d3.scaleLinear().domain([1955,2027]).range([margin.left,W-margin.right]);
   const timelineY=H/2;
 
-  // Main axis line
   svg.append('line').attr('x1',margin.left).attr('x2',W-margin.right)
     .attr('y1',timelineY).attr('y2',timelineY)
     .attr('stroke','rgba(148,163,184,0.15)').attr('stroke-width',2);
 
-  // Era background bands
+  // Era bands
   const eraBands=[
-    {era:'cold-war',start:1955,end:1975},
-    {era:'shuttle',start:1975,end:1995},
-    {era:'commercial',start:1995,end:2016},
-    {era:'new-space',start:2016,end:2027},
+    {era:'cold-war',start:1955,end:1975,label:'Cold War'},
+    {era:'shuttle',start:1975,end:1995,label:'Shuttle Era'},
+    {era:'commercial',start:1995,end:2016,label:'Commercial'},
+    {era:'new-space',start:2016,end:2027,label:'New Space Race'},
   ];
   eraBands.forEach(b=>{
     svg.append('rect')
@@ -1596,8 +1611,7 @@ function drawSpaceRace(){
     svg.append('text')
       .attr('x',(x(b.start)+x(b.end))/2).attr('y',24)
       .attr('text-anchor','middle').attr('fill',eraColors[b.era][0]).attr('class','era-label')
-      .attr('opacity',0.5)
-      .text(b.era.replace(/-/g,' ').replace('new space','New Space Race').replace('cold war','Cold War').replace('shuttle','Shuttle Era').replace('commercial','Commercial'));
+      .attr('opacity',0.5).text(b.label);
   });
 
   // Decade markers
@@ -1606,78 +1620,57 @@ function drawSpaceRace(){
       .attr('text-anchor','middle').attr('fill','#475569').attr('font-size','11px').text(yr);
     svg.append('line').attr('x1',x(yr)).attr('x2',x(yr))
       .attr('y1',timelineY-5).attr('y2',timelineY+5)
-      .attr('stroke','rgba(148,163,184,0.2)').attr('stroke-width',1);
+      .attr('stroke','rgba(148,163,184,0.2)');
   }
 
   // Nodes
   spaceRaceData.forEach((d,i)=>{
     const cx=x(d.year);
     const above=i%2===0;
-    const stemLen=isMobile?40+(i%3)*15:50+(i%3)*20;
+    const stemLen=isMobile?38+(i%3)*14:48+(i%3)*18;
     const nodeY=above?timelineY-stemLen:timelineY+stemLen;
     const colors=eraColors[d.era];
 
-    // Stem line
     svg.append('line').attr('x1',cx).attr('x2',cx)
       .attr('y1',timelineY).attr('y2',timelineY)
       .attr('stroke',colors[0]).attr('stroke-width',1).attr('stroke-opacity',0.4)
-      .transition().duration(600).delay(i*80)
-      .attr('y2',nodeY);
+      .transition().duration(600).delay(i*70).attr('y2',nodeY);
 
-    // Node circle
     const node=svg.append('circle')
       .attr('cx',cx).attr('cy',nodeY).attr('r',0)
       .attr('fill',colors[0]).attr('fill-opacity',0.8)
       .attr('stroke',colors[1]||colors[0]).attr('stroke-width',2)
       .style('cursor','pointer');
 
-    node.transition().duration(500).delay(200+i*80).ease(d3.easeElasticOut.amplitude(1).period(0.6))
+    node.transition().duration(500).delay(200+i*70).ease(d3.easeElasticOut.amplitude(1).period(0.6))
       .attr('r',isMobile?5:7);
 
     node.on('mouseover',function(e){
       d3.select(this).transition().duration(200).attr('r',isMobile?8:11).attr('fill-opacity',1);
-      const eraName=d.era.replace(/-/g,' ').replace('new space','New Space Race').replace('cold war','Cold War').replace('shuttle','Shuttle Era').replace('commercial','Commercial Era');
-      showTooltip(e,`${Math.floor(d.year)} — ${d.name}`,eraName,d.detail);
+      showTooltip(e,`${Math.floor(d.year)} — ${d.name}`,d.era.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase()),d.detail);
     })
     .on('mousemove',moveTooltip)
     .on('mouseout',function(){
-      d3.select(this).transition().duration(200).attr('r',isMobile?5:7).attr('fill-opacity',0.8);
-      hideTooltip();
+      d3.select(this).transition().duration(200).attr('r',isMobile?5:7).attr('fill-opacity',0.8);hideTooltip();
     });
 
-    // Year + name label
-    if(!isMobile || i%2===0){
+    if(!isMobile||i%2===0){
       svg.append('text').attr('x',cx).attr('y',above?nodeY-12:nodeY+16)
         .attr('text-anchor','middle').attr('fill',colors[0]).attr('font-size',isMobile?'7px':'10px')
-        .attr('font-weight','600').attr('opacity',0)
-        .text(Math.floor(d.year))
-        .transition().delay(400+i*80).duration(400).attr('opacity',0.9);
-
+        .attr('font-weight','600').attr('opacity',0).text(Math.floor(d.year))
+        .transition().delay(400+i*70).duration(400).attr('opacity',0.9);
       svg.append('text').attr('x',cx).attr('y',above?nodeY-24:nodeY+28)
         .attr('text-anchor','middle').attr('fill','#94a3b8').attr('font-size',isMobile?'6px':'9px')
         .attr('opacity',0)
         .text(d.name.length>(isMobile?12:20)?d.name.slice(0,isMobile?10:18)+'…':d.name)
-        .transition().delay(500+i*80).duration(400).attr('opacity',0.8);
+        .transition().delay(500+i*70).duration(400).attr('opacity',0.8);
     }
   });
 }
 
 // ============================================================
-// 8. SATELLITE GROWTH AREA CHART
+// 10. SATELLITE GROWTH — Area chart
 // ============================================================
-const satGrowthData = [
-  {year:1957,count:1},{year:1965,count:100},{year:1975,count:300},{year:1985,count:500},
-  {year:1995,count:700},{year:2005,count:900},{year:2010,count:1000},{year:2015,count:1400},
-  {year:2019,count:2200},{year:2020,count:3300},{year:2021,count:4900},{year:2022,count:6900},
-  {year:2023,count:9900},{year:2024,count:12800},{year:2025,count:14900},{year:2026,count:19000},
-];
-
-const satAnnotations = [
-  {year:2019,count:2200,label:'Starlink begins',anchor:'start',dy:-20},
-  {year:2025,count:14900,label:'Kuiper first batch',anchor:'end',dy:-25},
-  {year:2026,count:19000,label:'ASTS BlueBird',anchor:'end',dy:-15},
-];
-
 function drawSatGrowth(){
   const container=document.getElementById('satgrowth-viz');
   container.innerHTML='';
@@ -1689,7 +1682,6 @@ function drawSatGrowth(){
   const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
   const defs=svg.append('defs');
 
-  // Gradient fill
   const areaGrad=defs.append('linearGradient').attr('id','sat-area-grad').attr('x1','0').attr('x2','0').attr('y1','0').attr('y2','1');
   areaGrad.append('stop').attr('offset','0%').attr('stop-color','#005288').attr('stop-opacity',0.6);
   areaGrad.append('stop').attr('offset','100%').attr('stop-color','#005288').attr('stop-opacity',0.02);
@@ -1697,7 +1689,6 @@ function drawSatGrowth(){
   const x=d3.scaleLinear().domain([1957,2026]).range([margin.left,W-margin.right]);
   const y=d3.scaleLinear().domain([0,20000]).range([H-margin.bottom,margin.top]);
 
-  // Grid
   [0,5000,10000,15000,20000].forEach(v=>{
     svg.append('line').attr('x1',margin.left).attr('x2',W-margin.right)
       .attr('y1',y(v)).attr('y2',y(v)).attr('stroke','rgba(148,163,184,0.08)');
@@ -1705,7 +1696,6 @@ function drawSatGrowth(){
       .attr('text-anchor','end').attr('fill','#64748b').attr('font-size','10px').text(fmt(v));
   });
 
-  // X axis labels
   for(let yr=1960;yr<=2025;yr+=10){
     svg.append('text').attr('x',x(yr)).attr('y',H-margin.bottom+20)
       .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','10px').text(yr);
@@ -1713,32 +1703,24 @@ function drawSatGrowth(){
   svg.append('text').attr('x',x(2026)).attr('y',H-margin.bottom+20)
     .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','10px').attr('font-style','italic').text('2026*');
 
-  // Area
-  const area=d3.area()
-    .x(d=>x(d.year)).y0(y(0)).y1(d=>y(d.count))
-    .curve(d3.curveMonotoneX);
+  const area=d3.area().x(d=>x(d.year)).y0(y(0)).y1(d=>y(d.count)).curve(d3.curveMonotoneX);
+  const line=d3.line().x(d=>x(d.year)).y(d=>y(d.count)).curve(d3.curveMonotoneX);
 
-  const line=d3.line()
-    .x(d=>x(d.year)).y(d=>y(d.count))
-    .curve(d3.curveMonotoneX);
-
-  // Clip path for animation
+  // Clip for drawing animation
   const clipId='sat-clip';
   const clip=defs.append('clipPath').attr('id',clipId)
     .append('rect').attr('x',margin.left).attr('y',0).attr('width',0).attr('height',H);
 
   svg.append('path').datum(satGrowthData).attr('d',area)
     .attr('fill','url(#sat-area-grad)').attr('clip-path',`url(#${clipId})`);
-
   svg.append('path').datum(satGrowthData).attr('d',line)
     .attr('fill','none').attr('stroke','#0ea5e9').attr('stroke-width',2.5)
     .attr('clip-path',`url(#${clipId})`);
 
-  // Animate clip
-  clip.transition().duration(2500).ease(d3.easeCubicOut)
+  clip.transition().duration(2000).ease(d3.easeCubicOut)
     .attr('width',W-margin.left-margin.right);
 
-  // Data dots
+  // Dots
   satGrowthData.forEach((d,i)=>{
     svg.append('circle')
       .attr('cx',x(d.year)).attr('cy',y(d.count)).attr('r',0)
@@ -1751,41 +1733,33 @@ function drawSatGrowth(){
       })
       .on('mousemove',moveTooltip)
       .on('mouseout',function(){d3.select(this).transition().duration(200).attr('r',4);hideTooltip()})
-      .transition().duration(400).delay(i*120+500).attr('r',4);
+      .transition().duration(400).delay(i*100+400).attr('r',4);
   });
 
   // Annotations
   satAnnotations.forEach(a=>{
-    const ax=x(a.year), ay=y(a.count);
+    const ax=x(a.year),ay=y(a.count);
     svg.append('line').attr('x1',ax).attr('x2',ax)
       .attr('y1',ay).attr('y2',ay+a.dy)
       .attr('class','annotation-line').attr('opacity',0)
-      .transition().delay(2000).duration(500).attr('opacity',1);
+      .transition().delay(1800).duration(500).attr('opacity',1);
     svg.append('text')
       .attr('x',ax+(a.anchor==='end'?-8:8)).attr('y',ay+a.dy-4)
       .attr('text-anchor',a.anchor).attr('class','annotation-text').attr('opacity',0)
       .text(a.label)
-      .transition().delay(2200).duration(500).attr('opacity',1);
+      .transition().delay(2000).duration(500).attr('opacity',1);
   });
+
+  // Y-axis label
+  svg.append('text')
+    .attr('transform',`translate(16,${H/2}) rotate(-90)`)
+    .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','11px')
+    .text('Active satellites');
 }
 
 // ============================================================
-// 9. COST PER KG COLLAPSE — LOG SCALE
+// 11. COST COLLAPSE — Log scale line chart
 // ============================================================
-const costData = [
-  {year:1970,cost:54500,vehicle:'Saturn V',projected:false},
-  {year:1981,cost:54500,vehicle:'Space Shuttle',projected:false},
-  {year:1996,cost:10000,vehicle:'Ariane 5',projected:false},
-  {year:2002,cost:5000,vehicle:'Soyuz',projected:false},
-  {year:2010,cost:4600,vehicle:'Falcon 9 v1.0',projected:false},
-  {year:2013,cost:2700,vehicle:'Falcon 9 v1.1',projected:false},
-  {year:2018,cost:2600,vehicle:'Falcon 9 Block 5',projected:false},
-  {year:2018.5,cost:1400,vehicle:'Falcon Heavy',projected:false},
-  {year:2025,cost:3500,vehicle:'New Glenn (est)',projected:false},
-  {year:2025.5,cost:200,vehicle:'Starship (early)',projected:true},
-  {year:2027,cost:10,vehicle:'Starship (target)',projected:true},
-];
-
 function drawCostCollapse(){
   const container=document.getElementById('costcollapse-viz');
   container.innerHTML='';
@@ -1799,34 +1773,27 @@ function drawCostCollapse(){
   const x=d3.scaleLinear().domain([1968,2028]).range([margin.left,W-margin.right]);
   const y=d3.scaleLog().domain([5,60000]).range([H-margin.bottom,margin.top]);
 
-  // Grid lines (log scale)
   [10,100,1000,10000,50000].forEach(v=>{
     svg.append('line').attr('x1',margin.left).attr('x2',W-margin.right)
       .attr('y1',y(v)).attr('y2',y(v)).attr('stroke','rgba(148,163,184,0.08)');
     svg.append('text').attr('x',margin.left-8).attr('y',y(v)+4)
-      .attr('text-anchor','end').attr('fill','#64748b').attr('font-size','10px')
-      .text('$'+fmt(v));
+      .attr('text-anchor','end').attr('fill','#64748b').attr('font-size','10px').text('$'+fmt(v));
   });
 
-  // X axis
   for(let yr=1970;yr<=2025;yr+=5){
     svg.append('text').attr('x',x(yr)).attr('y',H-margin.bottom+20)
       .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','10px').text(yr);
   }
 
-  // Split data into solid and projected
   const solidData=costData.filter(d=>!d.projected);
   const projectedData=costData.filter(d=>d.projected);
-  // Bridge: last solid point + first projected
   const bridgeData=[solidData[solidData.length-1],...projectedData];
-
   const line=d3.line().x(d=>x(d.year)).y(d=>y(d.cost)).curve(d3.curveMonotoneX);
 
-  // Solid line
+  // Solid line with drawing animation
   const solidPath=svg.append('path').datum(solidData).attr('d',line)
     .attr('fill','none').attr('stroke','#10b981').attr('stroke-width',2.5);
 
-  // Animate solid line drawing
   const solidLen=solidPath.node().getTotalLength();
   solidPath.attr('stroke-dasharray',solidLen).attr('stroke-dashoffset',solidLen)
     .transition().duration(2000).ease(d3.easeCubicOut).attr('stroke-dashoffset',0);
@@ -1835,12 +1802,11 @@ function drawCostCollapse(){
   const projPath=svg.append('path').datum(bridgeData).attr('d',line)
     .attr('fill','none').attr('stroke','#10b981').attr('stroke-width',2)
     .attr('stroke-dasharray','8,5').attr('opacity',0.6);
-
   const projLen=projPath.node().getTotalLength();
   projPath.attr('stroke-dashoffset',projLen)
     .transition().duration(1000).delay(2000).ease(d3.easeCubicOut).attr('stroke-dashoffset',0);
 
-  // Data dots with tooltips
+  // Data dots
   costData.forEach((d,i)=>{
     const dot=svg.append('circle')
       .attr('cx',x(d.year)).attr('cy',y(d.cost)).attr('r',0)
@@ -1861,7 +1827,7 @@ function drawCostCollapse(){
     .on('mousemove',moveTooltip)
     .on('mouseout',function(){d3.select(this).transition().duration(200).attr('r',5);hideTooltip()});
 
-    // Vehicle labels (for key points)
+    // Labels for key points
     if(!isMobile && (i===0||i===4||i===7||i===9||i===10)){
       svg.append('text')
         .attr('x',x(d.year)+8).attr('y',y(d.cost)-10)
@@ -1872,11 +1838,11 @@ function drawCostCollapse(){
     }
   });
 
-  // "Reusability revolution" annotation at 2015
-  const annX=x(2015), annY=y(2700);
+  // "Reusability revolution" annotation
+  const annX=x(2015),annY=y(2700);
   svg.append('line').attr('x1',annX).attr('x2',annX)
     .attr('y1',annY+5).attr('y2',annY+35)
-    .attr('stroke','rgba(16,185,129,0.5)').attr('stroke-width',1).attr('stroke-dasharray','3,3')
+    .attr('stroke','rgba(16,185,129,0.5)').attr('stroke-dasharray','3,3')
     .attr('opacity',0).transition().delay(2000).duration(500).attr('opacity',1);
   svg.append('text').attr('x',annX).attr('y',annY+48)
     .attr('text-anchor','middle').attr('fill','#10b981').attr('font-size','10px').attr('font-weight','600')
@@ -1891,62 +1857,47 @@ function drawCostCollapse(){
 }
 
 // ============================================================
-// INIT + RESIZE
+// INIT — Draw everything on load (don't rely solely on IntersectionObserver)
 // ============================================================
 function drawAll(){
   drawFootprint();drawTimeline();drawInvestment();drawSatellites();
-  drawRockets();drawLandmarks();drawPower();drawThrustComparisons();drawMap();
-  drawSpaceRace();drawSatGrowth();drawCostCollapse();
+  drawRockets();drawLandmarks();drawPower();drawThrustComparisons();
+  drawMap();drawSpaceRace();drawSatGrowth();drawCostCollapse();
 }
 
 // Debounced resize
 let resizeTimer;
-window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(drawAll,250)});
-
-// Lazy init on scroll into view
-const vizObserver=new IntersectionObserver((entries)=>{
-  entries.forEach(e=>{
-    if(e.isIntersecting){
-      const id=e.target.id;
-      if(id==='footprint-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawFootprint()}
-      if(id==='timeline-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawTimeline()}
-      if(id==='investment-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawInvestment()}
-      if(id==='satellite-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawSatellites()}
-      if(id==='rockets-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawRockets()}
-      if(id==='landmarks-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawLandmarks()}
-      if(id==='power-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawPower();drawThrustComparisons()}
-      if(id==='map-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawMap()}
-      if(id==='spacerace-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawSpaceRace()}
-      if(id==='satgrowth-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawSatGrowth()}
-      if(id==='costcollapse-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawCostCollapse()}
-    }
-  });
-},{threshold:0.1});
-
-document.querySelectorAll('.viz-container').forEach(el=>vizObserver.observe(el));
+window.addEventListener('resize',()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(()=>{
+    // Reset thrust-comparisons drawn flag so it redraws
+    const tc=document.getElementById('thrust-comparisons');
+    if(tc) delete tc.dataset.drawn;
+    drawAll();
+  },250);
+});
 
 // Animate hero numbers
-function animateNumbers(){
+function animateHeroNumbers(){
   document.querySelectorAll('.hero-stat .number').forEach(el=>{
-    const text=el.textContent;
-    const match=text.match(/([\d.]+)/);
-    if(!match)return;
-    const target=parseFloat(match[1]);
-    const suffix=text.replace(match[1],'');
-    const prefix=suffix.startsWith('$')?'':'';
+    const target=parseFloat(el.dataset.target);
+    const prefix=el.dataset.prefix||'';
+    const suffix=el.dataset.suffix||'';
+    if(isNaN(target))return;
     let current=0;
+    const isInt=target===Math.floor(target)&&target<100;
     const step=target/60;
     const interval=setInterval(()=>{
       current+=step;
       if(current>=target){current=target;clearInterval(interval)}
-      el.textContent=text.replace(match[1],current>=100?Math.round(current):current.toFixed(1));
+      el.textContent=prefix+(isInt?Math.round(current):current.toFixed(1))+suffix;
     },25);
   });
 }
 
-// Start
+// CRITICAL: Call drawAll on load so everything renders immediately
 window.addEventListener('load',()=>{
-  setTimeout(animateNumbers,500);
+  setTimeout(()=>{animateHeroNumbers();drawAll()},100);
 });
 </script>
 </body>
