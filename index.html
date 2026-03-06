@@ -294,7 +294,7 @@ footer a:hover{color:var(--text-primary)}
   <div class="hero-stats">
     <div class="hero-stat"><span class="number" style="color:var(--spacex-light)">3.8M+</span><span class="label">Sq Ft of Facilities</span></div>
     <div class="hero-stat"><span class="number" style="color:var(--amazon-light)">$4B+</span><span class="label">Investment</span></div>
-    <div class="hero-stat"><span class="number" style="color:var(--asts-light)">16,000+</span><span class="label">Satellites Planned</span></div>
+    <div class="hero-stat"><span class="number" style="color:var(--asts-light)">45,000+</span><span class="label">Satellites Planned</span></div>
     <div class="hero-stat"><span class="number" style="color:var(--blue-origin-light)">4</span><span class="label">Major Players</span></div>
   </div>
   <div class="scroll-indicator">
@@ -549,9 +549,9 @@ const investments = [
 ];
 
 const satellites = [
-  {name:'Starlink',company:'SpaceX',planned:42000,deployed:6800,mass:260,antennaArea:null,note:'V2 Mini satellites, ~260 kg each'},
-  {name:'Project Kuiper',company:'Amazon',planned:3236,deployed:0,mass:500,antennaArea:null,note:'Half deployed by Jul 2026 deadline'},
-  {name:'BlueBird',company:'ASTS',planned:168,deployed:5,mass:1500,antennaArea:2400,note:'Largest phased-array antennas ever: 2,400 sq ft each'},
+  {name:'Starlink',company:'SpaceX',planned:42000,deployed:9900,mass:260,antennaArea:null,note:'V2 Mini satellites, ~260 kg each. ~8,300 operational as of Mar 2026'},
+  {name:'Project Kuiper',company:'Amazon',planned:3236,deployed:27,mass:500,antennaArea:null,note:'First 27 operational sats launched Apr 2025. Half deployed by Jul 2026 deadline'},
+  {name:'BlueBird',company:'ASTS',planned:243,deployed:6,mass:1500,antennaArea:2400,note:'Largest phased-array antennas ever: 2,400 sq ft each. 45-60 by end 2026'},
 ];
 
 const mapLocations = [
@@ -1025,7 +1025,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 // 5. ROCKET COMPARISON VISUALIZATION
 // ============================================================
 const rocketData = [
-  {name:'Starship',sub:'Super Heavy + Ship',company:'SpaceX',height:121,heightFt:397,diameter:9,
+  {name:'Starship',sub:'Super Heavy + Ship',company:'SpaceX',height:121,heightFt:398,diameter:9,
    thrustKN:80000,thrustLbf:'17M',engines:'33+6 Raptor',payloadLEO:'150–200t',
    firstFlight:'2024',reusable:'Both stages ("chopstick" catch)',thermalGW:224,
    color:'#0ea5e9',note:'Tallest and most powerful rocket ever flown'},
