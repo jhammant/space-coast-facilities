@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Space Coast: The New Cape — Rocket Facility Scale Visualization</title>
+<meta name="description" content="Interactive visualization of the massive scale of Space Coast rocket manufacturing facilities — SpaceX, Blue Origin, Amazon Kuiper, and AST SpaceMobile.">
+<meta property="og:title" content="Space Coast: The New Cape">
+<meta property="og:description" content="Visualizing the massive scale of rocket manufacturing on Florida's Space Coast">
+<meta property="og:type" content="website">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-deep:#060a14;--bg-mid:#0a0e1a;--bg-card:rgba(15,23,42,0.7);
+  --spacex:#005288;--spacex-light:#0ea5e9;
+  --blue-origin:#0066CC;--blue-origin-light:#38bdf8;
+  --amazon:#FF9900;--amazon-light:#fbbf24;
+  --asts:#7C3AED;--asts-light:#a78bfa;
+  --text-primary:#f1f5f9;--text-secondary:#94a3b8;--text-muted:#64748b;
+  --glass-border:rgba(148,163,184,0.12);--glass-bg:rgba(15,23,42,0.55);
+}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg-deep);color:var(--text-primary);
+  line-height:1.6;overflow-x:hidden;
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+/* Stars canvas */
+#stars-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+
+/* Navigation */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(6,10,20,0.85);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--glass-border);
+  padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;
+  transition:transform 0.3s ease;
+}
+nav.hidden{transform:translateY(-100%)}
+.nav-brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.1rem;color:var(--text-primary);letter-spacing:-0.02em}
+.nav-brand span{color:var(--spacex-light);font-weight:400}
+.nav-links{display:flex;gap:0.5rem;flex-wrap:wrap}
+.nav-links a{
+  color:var(--text-secondary);text-decoration:none;font-size:0.8rem;font-weight:500;
+  padding:0.35rem 0.75rem;border-radius:6px;transition:all 0.2s;letter-spacing:0.02em;
+}
+.nav-links a:hover,.nav-links a.active{color:var(--text-primary);background:rgba(148,163,184,0.1)}
+
+/* Sections */
+section{position:relative;z-index:1;min-height:100vh;padding:100px 2rem 60px}
+.section-inner{max-width:1200px;margin:0 auto}
+
+/* Hero */
+#hero{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;min-height:100vh;padding:2rem;
+}
+#hero h1{
+  font-family:'Space Grotesk',sans-serif;font-size:clamp(2.5rem,7vw,5.5rem);
+  font-weight:800;line-height:1.05;letter-spacing:-0.03em;
+  background:linear-gradient(135deg,#f1f5f9 0%,#0ea5e9 50%,#a78bfa 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:1.5rem;
+}
+#hero .subtitle{
+  font-size:clamp(1rem,2.5vw,1.4rem);color:var(--text-secondary);
+  max-width:700px;font-weight:300;margin-bottom:3rem;line-height:1.5;
+}
+.hero-stats{display:flex;gap:2rem;flex-wrap:wrap;justify-content:center;margin-bottom:3rem}
+.hero-stat{text-align:center}
+.hero-stat .number{
+  font-family:'Space Grotesk',sans-serif;font-size:clamp(2rem,4vw,3rem);
+  font-weight:700;display:block;
+}
+.hero-stat .label{font-size:0.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em}
+.scroll-indicator{
+  position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
+  animation:bob 2s ease-in-out infinite;color:var(--text-muted);font-size:0.8rem;
+  display:flex;flex-direction:column;align-items:center;gap:0.5rem;
+}
+.scroll-arrow{width:24px;height:24px;border-right:2px solid var(--text-muted);border-bottom:2px solid var(--text-muted);transform:rotate(45deg)}
+@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(10px)}}
+
+/* Glass panels */
+.glass-panel{
+  background:var(--glass-bg);backdrop-filter:blur(20px);
+  border:1px solid var(--glass-border);border-radius:16px;
+  padding:2rem;margin-bottom:2rem;
+  transition:border-color 0.3s,box-shadow 0.3s;
+}
+.glass-panel:hover{border-color:rgba(148,163,184,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+
+/* Section headers */
+.section-header{margin-bottom:3rem}
+.section-header .overline{
+  font-size:0.75rem;text-transform:uppercase;letter-spacing:0.15em;
+  color:var(--text-muted);font-weight:600;margin-bottom:0.5rem;
+}
+.section-header h2{
+  font-family:'Space Grotesk',sans-serif;font-size:clamp(1.8rem,4vw,3rem);
+  font-weight:700;letter-spacing:-0.02em;line-height:1.15;margin-bottom:0.75rem;
+}
+.section-header p{color:var(--text-secondary);max-width:600px;font-size:1rem}
+
+/* Viz containers */
+.viz-container{width:100%;overflow:visible}
+.viz-container svg{width:100%;height:auto;overflow:visible}
+
+/* Tooltip */
+.tooltip{
+  position:fixed;pointer-events:none;z-index:200;
+  background:rgba(6,10,20,0.95);backdrop-filter:blur(16px);
+  border:1px solid var(--glass-border);border-radius:10px;
+  padding:1rem 1.25rem;max-width:320px;
+  box-shadow:0 20px 40px rgba(0,0,0,0.5);
+  font-size:0.85rem;opacity:0;transition:opacity 0.15s;
+}
+.tooltip.visible{opacity:1}
+.tooltip .tt-title{font-weight:700;font-size:0.95rem;margin-bottom:0.35rem}
+.tooltip .tt-company{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem}
+.tooltip .tt-detail{color:var(--text-secondary);line-height:1.5}
+.tooltip .tt-detail strong{color:var(--text-primary)}
+
+/* Legend */
+.legend{display:flex;flex-wrap:wrap;gap:1.25rem;margin:1.5rem 0}
+.legend-item{display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;color:var(--text-secondary)}
+.legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+
+/* Reveal animation */
+.reveal{opacity:0;transform:translateY(40px);transition:opacity 0.8s cubic-bezier(0.16,1,0.3,1),transform 0.8s cubic-bezier(0.16,1,0.3,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:0.1s}.reveal-delay-2{transition-delay:0.2s}.reveal-delay-3{transition-delay:0.3s}
+
+/* Tab controls */
+.tab-controls{display:flex;gap:0.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.tab-btn{
+  background:rgba(148,163,184,0.08);border:1px solid var(--glass-border);
+  color:var(--text-secondary);padding:0.5rem 1rem;border-radius:8px;
+  font-size:0.8rem;font-weight:500;cursor:pointer;transition:all 0.2s;
+  font-family:inherit;
+}
+.tab-btn:hover{background:rgba(148,163,184,0.15);color:var(--text-primary)}
+.tab-btn.active{background:rgba(14,165,233,0.15);border-color:rgba(14,165,233,0.4);color:var(--spacex-light)}
+
+/* Comparison reference lines */
+.ref-line{stroke-dasharray:6,4;opacity:0.4}
+.ref-label{font-size:11px;fill:var(--text-muted)}
+
+/* Satellite viz */
+.sat-dot{opacity:0.7;transition:opacity 0.2s}
+.sat-dot:hover{opacity:1}
+
+/* Map */
+.map-label{font-size:10px;fill:var(--text-secondary);pointer-events:none}
+.map-feature{fill:rgba(148,163,184,0.08);stroke:rgba(148,163,184,0.2);stroke-width:0.5}
+
+/* Footer */
+footer{
+  position:relative;z-index:1;text-align:center;
+  padding:3rem 2rem;color:var(--text-muted);font-size:0.8rem;
+  border-top:1px solid var(--glass-border);
+}
+footer a{color:var(--text-secondary);text-decoration:none}
+footer a:hover{color:var(--text-primary)}
+
+/* Mobile */
+@media(max-width:768px){
+  section{padding:80px 1rem 40px}
+  .glass-panel{padding:1.25rem}
+  .nav-links{display:none}
+  .hero-stats{gap:1rem}
+  .legend{gap:0.75rem}
+}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg-deep)}
+::-webkit-scrollbar-thumb{background:rgba(148,163,184,0.3);border-radius:3px}
+</style>
+</head>
+<body>
+
+<canvas id="stars-canvas"></canvas>
+
+<div class="tooltip" id="tooltip">
+  <div class="tt-title"></div>
+  <div class="tt-company"></div>
+  <div class="tt-detail"></div>
+</div>
+
+<nav id="navbar">
+  <div class="nav-brand">SPACE COAST <span>— The New Cape</span></div>
+  <div class="nav-links">
+    <a href="#hero">Home</a>
+    <a href="#footprint">Footprint</a>
+    <a href="#timeline">Timeline</a>
+    <a href="#investment">Investment</a>
+    <a href="#satellites">Satellites</a>
+    <a href="#map">Map</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <h1>The New Space Race<br>Is Being Built Here</h1>
+  <p class="subtitle">Florida's Space Coast is undergoing the largest aerospace construction boom in history. Four companies are building millions of square feet of rocket factories, satellite plants, and launch infrastructure — all within miles of each other.</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><span class="number" style="color:var(--spacex-light)">3.8M+</span><span class="label">Sq Ft of Facilities</span></div>
+    <div class="hero-stat"><span class="number" style="color:var(--amazon-light)">$4B+</span><span class="label">Investment</span></div>
+    <div class="hero-stat"><span class="number" style="color:var(--asts-light)">16,000+</span><span class="label">Satellites Planned</span></div>
+    <div class="hero-stat"><span class="number" style="color:var(--blue-origin-light)">4</span><span class="label">Major Players</span></div>
+  </div>
+  <div class="scroll-indicator">
+    <span>Scroll to explore</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<!-- FOOTPRINT COMPARISON -->
+<section id="footprint">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="overline">Scale Comparison</div>
+      <h2>How Big Are These Buildings?</h2>
+      <p>Every rectangle is drawn to scale. The dashed outlines show familiar landmarks for comparison.</p>
+    </div>
+    <div class="legend reveal reveal-delay-1">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--spacex)"></div>SpaceX</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--blue-origin)"></div>Blue Origin</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amazon)"></div>Amazon Kuiper</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--asts)"></div>AST SpaceMobile</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(148,163,184,0.3);border:1px dashed var(--text-muted)"></div>Reference</div>
+    </div>
+    <div class="glass-panel reveal reveal-delay-2">
+      <div class="viz-container" id="footprint-viz"></div>
+    </div>
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section id="timeline">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="overline">Construction Timeline</div>
+      <h2>A Decade of Expansion</h2>
+      <p>Major milestones in the aerospace construction boom, from the first factories to the massive expansions underway now.</p>
+    </div>
+    <div class="glass-panel reveal reveal-delay-1">
+      <div class="viz-container" id="timeline-viz"></div>
+    </div>
+  </div>
+</section>
+
+<!-- INVESTMENT -->
+<section id="investment">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="overline">Financial Scale</div>
+      <h2>Billions Pouring Into the Coast</h2>
+      <p>Known investment figures for major Space Coast facilities and contracts. Bubble size represents dollar value.</p>
+    </div>
+    <div class="legend reveal reveal-delay-1">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--spacex)"></div>SpaceX</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--blue-origin)"></div>Blue Origin</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amazon)"></div>Amazon Kuiper</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--asts)"></div>AST SpaceMobile</div>
+    </div>
+    <div class="glass-panel reveal reveal-delay-2">
+      <div class="viz-container" id="investment-viz"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SATELLITES -->
+<section id="satellites">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="overline">Orbital Ambitions</div>
+      <h2>Constellation Wars</h2>
+      <p>The race to blanket Earth in satellite coverage. Each dot represents satellites — hover to explore each constellation's ambitions.</p>
+    </div>
+    <div class="tab-controls reveal reveal-delay-1">
+      <button class="tab-btn active" data-tab="count">Satellite Count</button>
+      <button class="tab-btn" data-tab="antenna">Antenna Scale</button>
+    </div>
+    <div class="glass-panel reveal reveal-delay-2">
+      <div class="viz-container" id="satellite-viz"></div>
+    </div>
+  </div>
+</section>
+
+<!-- MAP -->
+<section id="map">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="overline">Geographic Concentration</div>
+      <h2>It's All Right Here</h2>
+      <p>Nearly all of these facilities sit within a 30-mile radius of Kennedy Space Center. This is the densest aerospace manufacturing corridor on Earth.</p>
+    </div>
+    <div class="legend reveal reveal-delay-1">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--spacex)"></div>SpaceX</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--blue-origin)"></div>Blue Origin</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amazon)"></div>Amazon Kuiper</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--asts)"></div>AST SpaceMobile</div>
+    </div>
+    <div class="glass-panel reveal reveal-delay-2">
+      <div class="viz-container" id="map-viz"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Built with D3.js · Data sourced from public filings, press releases, and FAA records · March 2026</p>
+  <p style="margin-top:0.5rem"><a href="https://github.com/jhammant/space-coast-facilities">Source on GitHub</a></p>
+</footer>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const COLORS = {
+  SpaceX:'#005288', 'Blue Origin':'#0066CC', Amazon:'#FF9900', ASTS:'#7C3AED',
+  SpaceXLight:'#0ea5e9', 'Blue OriginLight':'#38bdf8', AmazonLight:'#fbbf24', ASTSLight:'#a78bfa',
+  ref:'rgba(148,163,184,0.25)'
+};
+function companyColor(c){return COLORS[c]||'#94a3b8'}
+function companyColorLight(c){return COLORS[c+'Light']||companyColor(c)}
+
+const facilities = [
+  {name:'Blue Origin Deep South Campus',company:'Blue Origin',sqft:1000000,type:'Manufacturing Campus',note:'Potentially 1M+ sq ft total campus'},
+  {name:'Blue Origin Project Horizon',company:'Blue Origin',sqft:800000,type:'Manufacturing',note:'800,000 sq ft on 31 acres, filed Feb 2026'},
+  {name:'SpaceX Gigabay',company:'SpaceX',sqft:700000,type:'Manufacturing',note:'Starbase, Boca Chica TX — completing Dec 2026'},
+  {name:'Blue Origin New Glenn Factory',company:'Blue Origin',sqft:650000,type:'Rocket Factory',note:'Merritt Island, Exploration Park'},
+  {name:'AST SpaceMobile Total',company:'ASTS',sqft:500000,type:'Satellite Manufacturing',note:'Expanded Nov 2025, sites in TX & FL'},
+  {name:'Amazon Kuiper Processing',company:'Amazon',sqft:100000,type:'Satellite Processing',note:'KSC, 100-ft clean room, $120M'},
+  {name:'Blue Origin Cocoa Warehouse',company:'Blue Origin',sqft:48000,type:'Warehouse & High Bay',note:'20-acre site, 110-ft high bay, $11.5M'},
+  {name:'Amazon Kuiper Flight HW',company:'Amazon',sqft:42000,type:'Flight Hardware',note:'$19.5M flight hardware building'},
+];
+const references = [
+  {name:'Pentagon',sqft:6500000},{name:'Amazon Fulfillment Center',sqft:800000},
+  {name:'Empire State Building',sqft:257000},{name:'Football Field',sqft:57600},
+  {name:'ISS Solar Arrays',sqft:27000},
+];
+
+const timelineData = [
+  {year:2015,event:'Blue Origin breaks ground on New Glenn factory',company:'Blue Origin',type:'construction'},
+  {year:2017,event:'SpaceX leases KSC Pad 39A',company:'SpaceX',type:'lease'},
+  {year:2019,event:'Blue Origin New Glenn factory completed (650K sq ft)',company:'Blue Origin',type:'completion'},
+  {year:2020,event:'Amazon announces Project Kuiper constellation',company:'Amazon',type:'announcement'},
+  {year:2021,event:'AST SpaceMobile begins Florida operations',company:'ASTS',type:'construction'},
+  {year:2022,event:'Amazon Kuiper processing facility begins construction ($120M)',company:'Amazon',type:'construction'},
+  {year:2023,event:'SpaceX Starbase expansion plans filed',company:'SpaceX',type:'announcement'},
+  {year:2024,event:'Blue Origin Lunar Plant 1 construction begins',company:'Blue Origin',type:'construction'},
+  {year:2024.3,event:'AST SpaceMobile expands to 500K sq ft',company:'ASTS',type:'expansion'},
+  {year:2025,event:'Blue Origin Lunar Plant 1 opens (Sep 2025)',company:'Blue Origin',type:'completion'},
+  {year:2025.3,event:'SpaceX Starbase annexation to ~8,000 acres approved',company:'SpaceX',type:'expansion'},
+  {year:2025.5,event:'Blue Origin wins $3.4B NASA Artemis V contract',company:'Blue Origin',type:'contract'},
+  {year:2026,event:'Blue Origin Project Horizon filed (800K sq ft)',company:'Blue Origin',type:'announcement'},
+  {year:2026.2,event:'Blue Origin Cocoa site acquired ($11.5M, 20 acres)',company:'Blue Origin',type:'construction'},
+  {year:2026.5,event:'Amazon Kuiper half-fleet deadline (1,618 satellites)',company:'Amazon',type:'milestone'},
+  {year:2026.9,event:'SpaceX Gigabay completing (700K sq ft)',company:'SpaceX',type:'completion'},
+];
+
+const investments = [
+  {name:'NASA Artemis V Contract',company:'Blue Origin',amount:3400,unit:'M',note:'Blue Moon lander development'},
+  {name:'Starbase Expansion',company:'SpaceX',amount:1000,unit:'M',note:'Est. land + Gigabay + infrastructure'},
+  {name:'Project Kuiper Constellation',company:'Amazon',amount:10000,unit:'M',note:'$10B+ total program (est.)'},
+  {name:'Kuiper Processing Facility',company:'Amazon',amount:120,unit:'M',note:'KSC satellite processing, 100K sq ft'},
+  {name:'Project Horizon Factory',company:'Blue Origin',amount:200,unit:'M',note:'800K sq ft, est. from comparable facilities'},
+  {name:'AST SpaceMobile Expansion',company:'ASTS',amount:150,unit:'M',note:'500K sq ft manufacturing buildout'},
+  {name:'Kuiper Flight HW Building',company:'Amazon',amount:19.5,unit:'M',note:'42K sq ft flight hardware'},
+  {name:'Blue Origin Cocoa Site',company:'Blue Origin',amount:11.5,unit:'M',note:'20-acre site with high bay'},
+];
+
+const satellites = [
+  {name:'Starlink',company:'SpaceX',planned:42000,deployed:6800,mass:260,antennaArea:null,note:'V2 Mini satellites, ~260 kg each'},
+  {name:'Project Kuiper',company:'Amazon',planned:3236,deployed:0,mass:500,antennaArea:null,note:'Half deployed by Jul 2026 deadline'},
+  {name:'BlueBird',company:'ASTS',planned:168,deployed:5,mass:1500,antennaArea:2400,note:'Largest phased-array antennas ever: 2,400 sq ft each'},
+];
+
+const mapLocations = [
+  {name:'KSC Pad 39A',company:'SpaceX',lat:28.6083,lon:-80.6041,r:8,note:'SpaceX launch operations'},
+  {name:'Blue Origin New Glenn Factory',company:'Blue Origin',lat:28.5241,lon:-80.6813,r:10,note:'650K sq ft, Exploration Park'},
+  {name:'Project Horizon Site',company:'Blue Origin',lat:28.51,lon:-80.69,r:9,note:'800K sq ft planned'},
+  {name:'Lunar Plant 1',company:'Blue Origin',lat:28.52,lon:-80.675,r:6,note:'Blue Moon lander factory'},
+  {name:'Launch Complex 36',company:'Blue Origin',lat:28.4703,lon:-80.5378,r:7,note:'New Glenn launch pad'},
+  {name:'Amazon Kuiper Facility',company:'Amazon',lat:28.585,lon:-80.651,r:7,note:'Satellite processing at KSC'},
+  {name:'Amazon Flight HW',company:'Amazon',lat:28.58,lon:-80.655,r:5,note:'42K sq ft flight hardware'},
+  {name:'Cape Canaveral Refurb Hub',company:'SpaceX',lat:28.4889,lon:-80.5778,r:6,note:'Rocket refurbishment'},
+  {name:'AST SpaceMobile FL',company:'ASTS',lat:28.41,lon:-80.75,r:7,note:'Florida manufacturing site'},
+  {name:'Blue Origin Cocoa Site',company:'Blue Origin',lat:28.385,lon:-80.74,r:5,note:'20-acre site, high bay'},
+];
+
+// ============================================================
+// STAR FIELD
+// ============================================================
+(function initStars(){
+  const canvas=document.getElementById('stars-canvas');
+  const ctx=canvas.getContext('2d');
+  let W,H,stars=[];
+  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;initField()}
+  function initField(){
+    stars=[];
+    const n=Math.min(300,Math.floor(W*H/4000));
+    for(let i=0;i<n;i++) stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+0.3,a:Math.random(),s:Math.random()*0.003+0.001});
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const scroll=window.scrollY;
+    for(const s of stars){
+      s.a+=s.s;if(s.a>1)s.a=0;
+      const alpha=Math.sin(s.a*Math.PI)*0.8+0.2;
+      const y=(s.y-scroll*0.05*s.r)%H;
+      ctx.beginPath();ctx.arc(s.x,y<0?y+H:y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(148,163,184,${alpha*0.6})`;ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+// ============================================================
+// TOOLTIP
+// ============================================================
+const ttEl=document.getElementById('tooltip');
+const ttTitle=ttEl.querySelector('.tt-title');
+const ttCompany=ttEl.querySelector('.tt-company');
+const ttDetail=ttEl.querySelector('.tt-detail');
+function showTooltip(e,title,company,detail){
+  ttTitle.textContent=title;
+  ttCompany.textContent=company;ttCompany.style.color=companyColorLight(company);
+  ttDetail.innerHTML=detail;
+  ttEl.classList.add('visible');
+  positionTooltip(e);
+}
+function positionTooltip(e){
+  const pad=16,tw=ttEl.offsetWidth,th=ttEl.offsetHeight;
+  let x=e.clientX+pad,y=e.clientY+pad;
+  if(x+tw>window.innerWidth)x=e.clientX-tw-pad;
+  if(y+th>window.innerHeight)y=e.clientY-th-pad;
+  ttEl.style.left=x+'px';ttEl.style.top=y+'px';
+}
+function moveTooltip(e){positionTooltip(e)}
+function hideTooltip(){ttEl.classList.remove('visible')}
+
+// ============================================================
+// REVEAL ON SCROLL
+// ============================================================
+const observer=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')});
+},{threshold:0.1,rootMargin:'0px 0px -50px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+
+// ============================================================
+// NAV ACTIVE STATE
+// ============================================================
+const sections=document.querySelectorAll('section');
+const navLinks=document.querySelectorAll('.nav-links a');
+const navObs=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      navLinks.forEach(l=>l.classList.toggle('active',l.getAttribute('href')==='#'+e.target.id));
+    }
+  });
+},{threshold:0.3});
+sections.forEach(s=>navObs.observe(s));
+
+// ============================================================
+// FORMAT HELPERS
+// ============================================================
+function fmt(n){return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':n.toLocaleString()}
+function fmtDollars(n){return n>=1000?'$'+(n/1000).toFixed(1)+'B':'$'+n+'M'}
+
+// ============================================================
+// 1. FOOTPRINT VISUALIZATION — TREEMAP
+// ============================================================
+function drawFootprint(){
+  const container=document.getElementById('footprint-viz');
+  container.innerHTML='';
+  const W=container.clientWidth;
+  const H=Math.max(500,W*0.6);
+
+  const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`).attr('preserveAspectRatio','xMidYMid meet');
+
+  // Scale: px per sq ft
+  const maxSqft=1000000;
+  const areaScale=d3.scaleLinear().domain([0,maxSqft]).range([0,W*H*0.35]);
+
+  // Draw reference: football field grid
+  const ffW=Math.sqrt(57600*(W/H));const ffH=57600/ffW;
+
+  // Position facilities using treemap-like packing
+  const allItems=[...facilities].sort((a,b)=>b.sqft-a.sqft);
+
+  // Simple scaled rectangles arranged in rows
+  const padding=8;
+  let cx=padding,cy=padding,rowH=0;
+  const rects=[];
+
+  allItems.forEach(f=>{
+    const area=areaScale(f.sqft);
+    const aspect=1.4+Math.random()*0.4;
+    let w=Math.sqrt(area*aspect);
+    let h=area/w;
+    if(w>W-2*padding){w=W-2*padding;h=area/w}
+    if(cx+w>W-padding){cx=padding;cy+=rowH+padding;rowH=0}
+    rects.push({...f,x:cx,y:cy,w,h});
+    cx+=w+padding;
+    rowH=Math.max(rowH,h);
+  });
+
+  // Adjust SVG height
+  const totalH=Math.max(H,d3.max(rects,d=>d.y+d.h)+padding+40);
+  svg.attr('viewBox',`0 0 ${W} ${totalH}`);
+
+  // Draw reference overlay: football field size
+  const refArea=areaScale(57600);
+  const refW=Math.sqrt(refArea*1.75);const refH=refArea/refW;
+  svg.append('rect').attr('x',W-refW-padding).attr('y',totalH-refH-30)
+    .attr('width',refW).attr('height',refH)
+    .attr('fill','none').attr('stroke','rgba(148,163,184,0.3)').attr('stroke-width',1.5)
+    .attr('stroke-dasharray','6,4').attr('rx',4);
+  svg.append('text').attr('x',W-refW/2-padding).attr('y',totalH-12)
+    .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','11px')
+    .text('⬜ Football Field (57,600 sq ft)');
+
+  // Facility rectangles
+  const groups=svg.selectAll('.facility-rect').data(rects).enter().append('g').attr('class','facility-rect');
+
+  groups.append('rect')
+    .attr('x',d=>d.x).attr('y',d=>d.y)
+    .attr('width',0).attr('height',0)
+    .attr('rx',6)
+    .attr('fill',d=>companyColor(d.company))
+    .attr('fill-opacity',0.35)
+    .attr('stroke',d=>companyColor(d.company))
+    .attr('stroke-width',1.5)
+    .attr('stroke-opacity',0.7)
+    .on('mouseover',function(e,d){
+      d3.select(this).attr('fill-opacity',0.55).attr('stroke-opacity',1);
+      showTooltip(e,d.name,d.company,`<strong>${fmt(d.sqft)} sq ft</strong> · ${d.type}<br>${d.note}<br><br>≈ ${(d.sqft/57600).toFixed(1)} football fields`);
+    })
+    .on('mousemove',moveTooltip)
+    .on('mouseout',function(){d3.select(this).attr('fill-opacity',0.35).attr('stroke-opacity',0.7);hideTooltip()})
+    .transition().duration(1000).delay((_,i)=>i*120).ease(d3.easeCubicOut)
+    .attr('width',d=>d.w).attr('height',d=>d.h);
+
+  // Labels inside
+  groups.append('text')
+    .attr('x',d=>d.x+d.w/2).attr('y',d=>d.y+d.h/2-8)
+    .attr('text-anchor','middle').attr('fill','#f1f5f9').attr('font-size',d=>d.w>120?'13px':'10px')
+    .attr('font-weight','600').attr('opacity',0)
+    .text(d=>d.name.replace(/SpaceX |Blue Origin |Amazon |AST /,''))
+    .transition().delay((_,i)=>600+i*120).duration(500).attr('opacity',1);
+
+  groups.append('text')
+    .attr('x',d=>d.x+d.w/2).attr('y',d=>d.y+d.h/2+10)
+    .attr('text-anchor','middle').attr('fill','#94a3b8').attr('font-size',d=>d.w>120?'11px':'9px')
+    .attr('opacity',0)
+    .text(d=>fmt(d.sqft)+' sq ft')
+    .transition().delay((_,i)=>700+i*120).duration(500).attr('opacity',1);
+}
+
+// ============================================================
+// 2. TIMELINE VISUALIZATION
+// ============================================================
+function drawTimeline(){
+  const container=document.getElementById('timeline-viz');
+  container.innerHTML='';
+  const W=container.clientWidth;
+  const margin={top:30,right:30,bottom:40,left:30};
+  const isMobile=W<600;
+  const rowH=isMobile?70:55;
+  const H=margin.top+timelineData.length*rowH+margin.bottom;
+
+  const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+
+  const x=d3.scaleLinear().domain([2014.5,2027.5]).range([margin.left+10,W-margin.right]);
+  const typeIcon={construction:'🔨',completion:'✅',announcement:'📢',expansion:'📐',lease:'📋',contract:'💰',milestone:'🎯'};
+
+  // Year grid
+  for(let yr=2015;yr<=2027;yr++){
+    svg.append('line').attr('x1',x(yr)).attr('x2',x(yr)).attr('y1',margin.top).attr('y2',H-margin.bottom)
+      .attr('stroke','rgba(148,163,184,0.08)').attr('stroke-width',1);
+    svg.append('text').attr('x',x(yr)).attr('y',H-margin.bottom+20)
+      .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','11px').text(yr);
+  }
+
+  // "Now" line
+  svg.append('line').attr('x1',x(2026.18)).attr('x2',x(2026.18)).attr('y1',margin.top-10).attr('y2',H-margin.bottom)
+    .attr('stroke','rgba(239,68,68,0.5)').attr('stroke-width',2).attr('stroke-dasharray','4,4');
+  svg.append('text').attr('x',x(2026.18)).attr('y',margin.top-15).attr('text-anchor','middle').attr('fill','#ef4444').attr('font-size','10px').attr('font-weight','600').text('NOW');
+
+  // Events
+  const eventGroups=svg.selectAll('.event').data(timelineData).enter().append('g')
+    .attr('class','event').attr('transform',(_,i)=>`translate(0,${margin.top+i*rowH})`);
+
+  // Connector line
+  eventGroups.append('line').attr('x1',x(d=>d.year)).attr('x2',x(d=>d.year))
+    .attr('x1',d=>x(d.year)).attr('x2',d=>x(d.year))
+    .attr('y1',0).attr('y2',rowH-10)
+    .attr('stroke',d=>companyColor(d.company)).attr('stroke-width',1).attr('stroke-opacity',0.3);
+
+  // Dot
+  eventGroups.append('circle')
+    .attr('cx',d=>x(d.year)).attr('cy',rowH/2)
+    .attr('r',0).attr('fill',d=>companyColor(d.company)).attr('stroke',d=>companyColorLight(d.company)).attr('stroke-width',2)
+    .on('mouseover',function(e,d){
+      d3.select(this).transition().duration(200).attr('r',10);
+      showTooltip(e,d.event,d.company,`${typeIcon[d.type]||''} ${d.type.charAt(0).toUpperCase()+d.type.slice(1)}<br>Year: ${Math.floor(d.year)}`);
+    })
+    .on('mousemove',moveTooltip)
+    .on('mouseout',function(){d3.select(this).transition().duration(200).attr('r',7);hideTooltip()})
+    .transition().duration(600).delay((_,i)=>i*80).attr('r',7);
+
+  // Text label
+  eventGroups.append('text')
+    .attr('x',d=>{
+      const px=x(d.year);
+      return px>W/2?px-14:px+14;
+    })
+    .attr('y',rowH/2+4)
+    .attr('text-anchor',d=>x(d.year)>W/2?'end':'start')
+    .attr('fill','#e2e8f0').attr('font-size',isMobile?'9px':'11px').attr('font-weight','500')
+    .attr('opacity',0)
+    .text(d=>d.event.length>(isMobile?40:80)?d.event.slice(0,isMobile?37:77)+'…':d.event)
+    .transition().delay((_,i)=>300+i*80).duration(500).attr('opacity',1);
+}
+
+// ============================================================
+// 3. INVESTMENT BUBBLE CHART
+// ============================================================
+function drawInvestment(){
+  const container=document.getElementById('investment-viz');
+  container.innerHTML='';
+  const W=container.clientWidth;
+  const H=Math.max(450,W*0.55);
+
+  const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+
+  const rScale=d3.scaleSqrt().domain([0,d3.max(investments,d=>d.amount)]).range([15,Math.min(120,W/5)]);
+
+  // Force simulation
+  const nodes=investments.map(d=>({...d,r:rScale(d.amount)}));
+
+  const sim=d3.forceSimulation(nodes)
+    .force('charge',d3.forceManyBody().strength(d=>-d.r*2))
+    .force('center',d3.forceCenter(W/2,H/2))
+    .force('collision',d3.forceCollide().radius(d=>d.r+6))
+    .force('x',d3.forceX(W/2).strength(0.05))
+    .force('y',d3.forceY(H/2).strength(0.05))
+    .stop();
+
+  for(let i=0;i<200;i++) sim.tick();
+
+  // Radial gradient defs
+  const defs=svg.append('defs');
+  ['SpaceX','Blue Origin','Amazon','ASTS'].forEach(c=>{
+    const grad=defs.append('radialGradient').attr('id','grad-'+c.replace(/\s/g,'')).attr('cx','35%').attr('cy','35%');
+    grad.append('stop').attr('offset','0%').attr('stop-color',companyColorLight(c)).attr('stop-opacity',0.9);
+    grad.append('stop').attr('offset','100%').attr('stop-color',companyColor(c)).attr('stop-opacity',0.7);
+  });
+
+  const bubbles=svg.selectAll('.bubble').data(nodes).enter().append('g').attr('class','bubble');
+
+  bubbles.append('circle')
+    .attr('cx',d=>d.x).attr('cy',d=>d.y)
+    .attr('r',0)
+    .attr('fill',d=>`url(#grad-${d.company.replace(/\s/g,'')})`)
+    .attr('stroke',d=>companyColorLight(d.company)).attr('stroke-width',1.5).attr('stroke-opacity',0.5)
+    .style('cursor','pointer')
+    .on('mouseover',function(e,d){
+      d3.select(this).transition().duration(200).attr('r',d.r*1.1).attr('stroke-opacity',1);
+      showTooltip(e,d.name,d.company,`<strong>${fmtDollars(d.amount)}</strong><br>${d.note}`);
+    })
+    .on('mousemove',moveTooltip)
+    .on('mouseout',function(e,d){
+      d3.select(this).transition().duration(200).attr('r',d.r).attr('stroke-opacity',0.5);hideTooltip();
+    })
+    .transition().duration(800).delay((_,i)=>i*100).ease(d3.easeElasticOut.amplitude(1).period(0.5))
+    .attr('r',d=>d.r);
+
+  // Labels
+  bubbles.append('text')
+    .attr('x',d=>d.x).attr('y',d=>d.y-4)
+    .attr('text-anchor','middle').attr('fill','#f1f5f9')
+    .attr('font-size',d=>d.r>50?'13px':d.r>30?'10px':'8px')
+    .attr('font-weight','700').attr('opacity',0).attr('pointer-events','none')
+    .text(d=>fmtDollars(d.amount))
+    .transition().delay((_,i)=>500+i*100).duration(500).attr('opacity',1);
+
+  bubbles.append('text')
+    .attr('x',d=>d.x).attr('y',d=>d.y+12)
+    .attr('text-anchor','middle').attr('fill','#94a3b8')
+    .attr('font-size',d=>d.r>50?'10px':d.r>30?'8px':'0px')
+    .attr('opacity',0).attr('pointer-events','none')
+    .text(d=>d.r>30?d.name.split(' ').slice(0,3).join(' '):'')
+    .transition().delay((_,i)=>600+i*100).duration(500).attr('opacity',1);
+}
+
+// ============================================================
+// 4. SATELLITE CONSTELLATION
+// ============================================================
+let currentSatTab='count';
+
+function drawSatellites(){
+  const container=document.getElementById('satellite-viz');
+  container.innerHTML='';
+  const W=container.clientWidth;
+
+  if(currentSatTab==='count') drawSatCount(container,W);
+  else drawSatAntenna(container,W);
+}
+
+function drawSatCount(container,W){
+  const H=Math.max(400,W*0.5);
+  const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const margin={top:60,right:40,bottom:80,left:40};
+
+  const data=satellites;
+  const barWidth=(W-margin.left-margin.right)/data.length;
+
+  const y=d3.scaleLinear().domain([0,45000]).range([H-margin.bottom,margin.top]);
+
+  // Grid lines
+  [0,10000,20000,30000,40000].forEach(v=>{
+    svg.append('line').attr('x1',margin.left).attr('x2',W-margin.right)
+      .attr('y1',y(v)).attr('y2',y(v)).attr('stroke','rgba(148,163,184,0.08)');
+    svg.append('text').attr('x',margin.left-5).attr('y',y(v)+4)
+      .attr('text-anchor','end').attr('fill','#64748b').attr('font-size','10px').text(fmt(v));
+  });
+
+  const groups=svg.selectAll('.sat-bar').data(data).enter().append('g')
+    .attr('transform',(_,i)=>`translate(${margin.left+i*barWidth+barWidth*0.15},0)`);
+
+  // Planned bar (ghost)
+  groups.append('rect')
+    .attr('y',d=>y(d.planned)).attr('width',barWidth*0.7)
+    .attr('height',0)
+    .attr('rx',4).attr('fill',d=>companyColor(d.company)).attr('fill-opacity',0.15)
+    .attr('stroke',d=>companyColor(d.company)).attr('stroke-width',1).attr('stroke-opacity',0.3).attr('stroke-dasharray','4,3')
+    .transition().duration(1000).delay((_,i)=>i*200)
+    .attr('height',d=>H-margin.bottom-y(d.planned));
+
+  // Deployed bar
+  groups.append('rect')
+    .attr('y',d=>y(d.deployed)).attr('width',barWidth*0.7)
+    .attr('height',0)
+    .attr('rx',4).attr('fill',d=>companyColor(d.company)).attr('fill-opacity',0.6)
+    .on('mouseover',function(e,d){
+      showTooltip(e,d.name,d.company,`<strong>Planned:</strong> ${d.planned.toLocaleString()}<br><strong>Deployed:</strong> ${d.deployed.toLocaleString()}<br><strong>Mass each:</strong> ${d.mass} kg<br>${d.note}`);
+    })
+    .on('mousemove',moveTooltip)
+    .on('mouseout',function(){hideTooltip()})
+    .transition().duration(1000).delay((_,i)=>200+i*200)
+    .attr('height',d=>d.deployed>0?Math.max(4,H-margin.bottom-y(d.deployed)):0);
+
+  // Labels
+  groups.append('text')
+    .attr('x',barWidth*0.35).attr('y',H-margin.bottom+20)
+    .attr('text-anchor','middle').attr('fill','#e2e8f0').attr('font-size','13px').attr('font-weight','600')
+    .text(d=>d.name);
+  groups.append('text')
+    .attr('x',barWidth*0.35).attr('y',H-margin.bottom+36)
+    .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','10px')
+    .text(d=>`${d.planned.toLocaleString()} planned`);
+  groups.append('text')
+    .attr('x',barWidth*0.35).attr('y',d=>y(d.planned)-8)
+    .attr('text-anchor','middle').attr('fill',d=>companyColorLight(d.company)).attr('font-size','14px').attr('font-weight','700')
+    .attr('opacity',0).text(d=>fmt(d.planned))
+    .transition().delay((_,i)=>800+i*200).duration(500).attr('opacity',1);
+
+  // Legend
+  svg.append('rect').attr('x',W-200).attr('y',12).attr('width',14).attr('height',14).attr('rx',2).attr('fill','rgba(148,163,184,0.3)').attr('stroke','rgba(148,163,184,0.4)').attr('stroke-dasharray','4,3');
+  svg.append('text').attr('x',W-180).attr('y',23).attr('fill','#94a3b8').attr('font-size','11px').text('Planned');
+  svg.append('rect').attr('x',W-200).attr('y',32).attr('width',14).attr('height',14).attr('rx',2).attr('fill','rgba(148,163,184,0.5)');
+  svg.append('text').attr('x',W-180).attr('y',43).attr('fill','#94a3b8').attr('font-size','11px').text('Deployed');
+}
+
+function drawSatAntenna(container,W){
+  const H=Math.max(350,W*0.4);
+  const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+
+  // Compare BlueBird antenna (2,400 sq ft) vs ISS solar array panel vs normal satellite
+  const antennaData=[
+    {name:'ASTS BlueBird Antenna',sqft:2400,color:COLORS.ASTS,company:'ASTS',note:'Largest commercial phased-array ever built — 2,400 sq ft per satellite'},
+    {name:'ISS Solar Array (one wing)',sqft:2700,color:'#94a3b8',company:'Reference',note:'Each of 8 ISS solar array wings — for scale comparison'},
+    {name:'Typical Comm Satellite',sqft:25,color:'#475569',company:'Reference',note:'Standard geostationary communications satellite solar panel area'},
+    {name:'Starlink V2 Mini',sqft:70,color:COLORS.SpaceX,company:'SpaceX',note:'Estimated deployed area of Starlink V2 Mini satellite'},
+  ];
+
+  const maxSqft=3000;
+  const scale=d=>Math.sqrt(d/maxSqft)*(Math.min(W,500)*0.4);
+
+  const cx=W/2,cy=H/2;
+
+  // Draw each as a square, centered
+  const sorted=[...antennaData].sort((a,b)=>b.sqft-a.sqft);
+
+  sorted.forEach((d,i)=>{
+    const size=scale(d.sqft)*2;
+    const xPos=cx-size/2;
+    const yPos=cy-size/2;
+
+    svg.append('rect')
+      .attr('x',xPos).attr('y',yPos).attr('width',0).attr('height',0)
+      .attr('rx',4)
+      .attr('fill',d.color).attr('fill-opacity',d.company==='Reference'?0.08:0.2)
+      .attr('stroke',d.color).attr('stroke-width',d.company==='Reference'?1:2)
+      .attr('stroke-opacity',d.company==='Reference'?0.3:0.7)
+      .attr('stroke-dasharray',d.company==='Reference'?'6,4':'none')
+      .style('cursor','pointer')
+      .on('mouseover',function(e){
+        d3.select(this).attr('fill-opacity',d.company==='Reference'?0.15:0.4);
+        showTooltip(e,d.name,d.company,`<strong>${d.sqft.toLocaleString()} sq ft</strong><br>${d.note}`);
+      })
+      .on('mousemove',moveTooltip)
+      .on('mouseout',function(){
+        d3.select(this).attr('fill-opacity',d.company==='Reference'?0.08:0.2);hideTooltip();
+      })
+      .transition().duration(800).delay(i*150).ease(d3.easeCubicOut)
+      .attr('x',xPos).attr('y',yPos).attr('width',size).attr('height',size);
+
+    // Label
+    const labelY= i===0 ? yPos-8 : (i===1 ? yPos+size+16 : yPos+size/2+4);
+    const labelX= i<2 ? cx : (i===2 ? cx+size/2+10 : cx-size/2-10);
+    const anchor= i<2 ? 'middle' : (i===2 ? 'start' : 'end');
+
+    svg.append('text')
+      .attr('x',labelX).attr('y',labelY)
+      .attr('text-anchor',anchor).attr('fill',d.color).attr('font-size','11px').attr('font-weight','600')
+      .attr('opacity',0)
+      .text(`${d.name} (${d.sqft.toLocaleString()} sq ft)`)
+      .transition().delay(500+i*150).duration(500).attr('opacity',0.9);
+  });
+}
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+    currentSatTab=this.dataset.tab;
+    drawSatellites();
+  });
+});
+
+// ============================================================
+// 5. MAP VISUALIZATION
+// ============================================================
+function drawMap(){
+  const container=document.getElementById('map-viz');
+  container.innerHTML='';
+  const W=container.clientWidth;
+  const H=Math.max(500,W*0.65);
+
+  const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+
+  // Simple mercator-like projection centered on Space Coast
+  const centerLat=28.5,centerLon=-80.65;
+  const zoomFactor=Math.min(W,800)*18;
+
+  function project(lat,lon){
+    const x=W/2+(lon-centerLon)*zoomFactor*Math.cos(centerLat*Math.PI/180);
+    const y=H/2-(lat-centerLat)*zoomFactor;
+    return [x,y];
+  }
+
+  // Draw coastline (simplified)
+  const coastPoints=[
+    [28.75,-80.55],[28.70,-80.52],[28.65,-80.54],[28.62,-80.58],
+    [28.60,-80.57],[28.58,-80.59],[28.55,-80.56],[28.52,-80.54],
+    [28.49,-80.53],[28.47,-80.53],[28.44,-80.55],[28.42,-80.58],
+    [28.39,-80.60],[28.36,-80.61],[28.33,-80.63],[28.30,-80.62],
+  ];
+  const landPoints=[
+    [28.75,-80.85],[28.75,-80.55],
+    ...coastPoints,
+    [28.30,-80.62],[28.30,-80.85]
+  ];
+
+  const coastPath=d3.line().x(d=>project(d[0],d[1])[0]).y(d=>project(d[0],d[1])[1]).curve(d3.curveBasis);
+
+  svg.append('path').datum(landPoints).attr('d',coastPath)
+    .attr('fill','rgba(148,163,184,0.05)').attr('stroke','rgba(148,163,184,0.2)').attr('stroke-width',1);
+
+  // Indian River / Banana River (water between land and barrier island)
+  const waterPoints=[
+    [28.68,-80.58],[28.63,-80.60],[28.58,-80.61],[28.53,-80.59],
+    [28.48,-80.57],[28.43,-80.60],[28.38,-80.63],
+  ];
+  svg.append('path').datum(waterPoints).attr('d',coastPath)
+    .attr('fill','none').attr('stroke','rgba(56,189,248,0.15)').attr('stroke-width',3);
+
+  // KSC boundary (approximate)
+  const kscBoundary=[
+    [28.64,-80.70],[28.64,-80.58],[28.56,-80.58],[28.56,-80.65],[28.52,-80.65],[28.52,-80.70]
+  ];
+  svg.append('polygon')
+    .attr('points',kscBoundary.map(p=>project(p[0],p[1]).join(',')).join(' '))
+    .attr('fill','rgba(148,163,184,0.04)').attr('stroke','rgba(148,163,184,0.15)')
+    .attr('stroke-width',1).attr('stroke-dasharray','8,4');
+  const kscCenter=project(28.58,-80.64);
+  svg.append('text').attr('x',kscCenter[0]).attr('y',kscCenter[1]-5)
+    .attr('text-anchor','middle').attr('fill','rgba(148,163,184,0.25)').attr('font-size','14px')
+    .attr('font-weight','700').attr('letter-spacing','0.15em').text('KENNEDY SPACE CENTER');
+
+  // 30-mile radius circle
+  const center30=project(centerLat,centerLon);
+  const edge30=project(centerLat+0.435,centerLon); // ~30 miles
+  const r30=Math.abs(center30[1]-edge30[1]);
+  svg.append('circle').attr('cx',center30[0]).attr('cy',center30[1]).attr('r',r30)
+    .attr('fill','none').attr('stroke','rgba(148,163,184,0.08)').attr('stroke-width',1).attr('stroke-dasharray','4,6');
+  svg.append('text').attr('x',center30[0]+r30+5).attr('y',center30[1])
+    .attr('fill','#475569').attr('font-size','9px').text('30-mile radius');
+
+  // Location dots
+  const dots=svg.selectAll('.map-dot').data(mapLocations).enter().append('g').attr('class','map-dot');
+
+  dots.append('circle')
+    .attr('cx',d=>project(d.lat,d.lon)[0]).attr('cy',d=>project(d.lat,d.lon)[1])
+    .attr('r',0)
+    .attr('fill',d=>companyColor(d.company)).attr('fill-opacity',0.6)
+    .attr('stroke',d=>companyColorLight(d.company)).attr('stroke-width',2)
+    .style('cursor','pointer')
+    .on('mouseover',function(e,d){
+      d3.select(this).transition().duration(200).attr('r',d.r*1.8).attr('fill-opacity',0.9);
+      showTooltip(e,d.name,d.company,d.note);
+    })
+    .on('mousemove',moveTooltip)
+    .on('mouseout',function(e,d){
+      d3.select(this).transition().duration(200).attr('r',d.r).attr('fill-opacity',0.6);hideTooltip();
+    })
+    .transition().duration(600).delay((_,i)=>i*80).ease(d3.easeElasticOut.amplitude(1).period(0.6))
+    .attr('r',d=>d.r);
+
+  // Pulse animation on key locations
+  mapLocations.filter(d=>d.r>=8).forEach(d=>{
+    const [px,py]=project(d.lat,d.lon);
+    svg.append('circle').attr('cx',px).attr('cy',py).attr('r',d.r)
+      .attr('fill','none').attr('stroke',companyColor(d.company)).attr('stroke-width',1)
+      .attr('opacity',0.6)
+      .append('animate').attr('attributeName','r').attr('from',d.r).attr('to',d.r*3)
+      .attr('dur','3s').attr('repeatCount','indefinite');
+    svg.selectAll('circle:last-child animate').each(function(){
+      const circle=this.parentNode;
+      d3.select(circle).append('animate').attr('attributeName','opacity').attr('from',0.4).attr('to',0)
+        .attr('dur','3s').attr('repeatCount','indefinite');
+    });
+  });
+
+  // Labels (offset to avoid overlap)
+  dots.append('text')
+    .attr('x',d=>project(d.lat,d.lon)[0]+d.r+6)
+    .attr('y',d=>project(d.lat,d.lon)[1]+4)
+    .attr('fill','#94a3b8').attr('font-size','9px').attr('font-weight','500')
+    .attr('opacity',0)
+    .text(d=>d.name)
+    .transition().delay((_,i)=>400+i*80).duration(500).attr('opacity',0.8);
+}
+
+// ============================================================
+// INIT + RESIZE
+// ============================================================
+function drawAll(){
+  drawFootprint();drawTimeline();drawInvestment();drawSatellites();drawMap();
+}
+
+// Debounced resize
+let resizeTimer;
+window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(drawAll,250)});
+
+// Lazy init on scroll into view
+const vizObserver=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const id=e.target.id;
+      if(id==='footprint-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawFootprint()}
+      if(id==='timeline-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawTimeline()}
+      if(id==='investment-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawInvestment()}
+      if(id==='satellite-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawSatellites()}
+      if(id==='map-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawMap()}
+    }
+  });
+},{threshold:0.1});
+
+document.querySelectorAll('.viz-container').forEach(el=>vizObserver.observe(el));
+
+// Animate hero numbers
+function animateNumbers(){
+  document.querySelectorAll('.hero-stat .number').forEach(el=>{
+    const text=el.textContent;
+    const match=text.match(/([\d.]+)/);
+    if(!match)return;
+    const target=parseFloat(match[1]);
+    const suffix=text.replace(match[1],'');
+    const prefix=suffix.startsWith('$')?'':'';
+    let current=0;
+    const step=target/60;
+    const interval=setInterval(()=>{
+      current+=step;
+      if(current>=target){current=target;clearInterval(interval)}
+      el.textContent=text.replace(match[1],current>=100?Math.round(current):current.toFixed(1));
+    },25);
+  });
+}
+
+// Start
+window.addEventListener('load',()=>{
+  setTimeout(animateNumbers,500);
+});
+</script>
+</body>
+</html>
