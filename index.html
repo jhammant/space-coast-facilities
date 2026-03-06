@@ -826,7 +826,7 @@ const costData = [
   {year:2013,cost:2700,vehicle:'Falcon 9 v1.1',projected:false},
   {year:2018,cost:2600,vehicle:'Falcon 9 Block 5',projected:false},
   {year:2018.5,cost:1400,vehicle:'Falcon Heavy',projected:false},
-  {year:2025,cost:3500,vehicle:'New Glenn (est)',projected:false},
+  {year:2025,cost:3500,vehicle:'New Glenn (est)',projected:false,standalone:true},
   {year:2025.5,cost:200,vehicle:'Starship (early)',projected:true},
   {year:2027,cost:10,vehicle:'Starship (target)',projected:true},
 ];
@@ -2042,8 +2042,10 @@ function drawCostCollapse(){
   }
   smartAxisLabels(svg, costYearLabels, {minGap: isMobile?50:35});
 
-  const solidData=costData.filter(d=>!d.projected);
+  const solidData=costData.filter(d=>!d.projected && !d.standalone);
+  const standaloneData=costData.filter(d=>d.standalone);
   const projectedData=costData.filter(d=>d.projected);
+  // Bridge from last solid point (Falcon Heavy) to Starship projections
   const bridgeData=[solidData[solidData.length-1],...projectedData];
   const line=d3.line().x(d=>x(d.year)).y(d=>y(d.cost)).curve(d3.curveMonotoneX);
 
@@ -2065,27 +2067,43 @@ function drawCostCollapse(){
 
   // Data dots
   costData.forEach((d,i)=>{
+    const isStandalone = d.standalone;
+    const dotColor = isStandalone ? '#38bdf8' : (d.projected ? '#10b981' : '#0ea5e9');
     const dot=svg.append('circle')
       .attr('cx',x(d.year)).attr('cy',y(d.cost)).attr('r',0)
-      .attr('fill',d.projected?'#10b981':'#0ea5e9')
+      .attr('fill',dotColor)
       .attr('fill-opacity',d.projected?0.6:0.9)
-      .attr('stroke',d.projected?'#10b981':'#0ea5e9')
-      .attr('stroke-width',2).attr('stroke-opacity',d.projected?0.4:0.7)
+      .attr('stroke',dotColor)
+      .attr('stroke-width',isStandalone?2.5:2)
+      .attr('stroke-opacity',d.projected?0.4:0.7)
+      .attr('stroke-dasharray',isStandalone?'3,2':'none')
       .style('cursor','pointer');
 
     dot.transition().duration(400).delay(d.projected?2200+i*100:500+i*120)
-      .ease(d3.easeElasticOut.amplitude(1).period(0.6)).attr('r',5);
+      .ease(d3.easeElasticOut.amplitude(1).period(0.6)).attr('r',isStandalone?6:5);
 
     dot.on('mouseover',function(e){
       d3.select(this).transition().duration(200).attr('r',8);
-      showTooltip(e,d.vehicle,d.projected?'Projected':'Historical',
-        `<strong>$${d.cost.toLocaleString()}/kg</strong> to LEO<br>Year: ${Math.floor(d.year)}${d.projected?' (projected)':''}`);
+      const category = isStandalone ? 'Blue Origin (not on trendline)' : (d.projected ? 'Projected' : 'Historical');
+      showTooltip(e,d.vehicle,category,
+        `<strong>$${d.cost.toLocaleString()}/kg</strong> to LEO<br>Year: ${Math.floor(d.year)}${d.projected?' (projected)':''}${isStandalone?'<br><em>Separate vehicle — not part of cost reduction trend</em>':''}`);
     })
     .on('mousemove',moveTooltip)
-    .on('mouseout',function(){d3.select(this).transition().duration(200).attr('r',5);hideTooltip()});
+    .on('mouseout',function(){d3.select(this).transition().duration(200).attr('r',isStandalone?6:5);hideTooltip()});
 
-    // Labels for key points
-    if(!isMobile && (i===0||i===4||i===7||i===9||i===10)){
+    // Label for standalone point (New Glenn)
+    if(isStandalone){
+      svg.append('text')
+        .attr('x',x(d.year)-10).attr('y',y(d.cost)-12)
+        .attr('text-anchor','end')
+        .attr('fill','#38bdf8')
+        .attr('font-size',isMobile?'8px':'9px').attr('font-weight','500').attr('opacity',0)
+        .text(`← ${d.vehicle}`)
+        .transition().delay(1500).duration(500).attr('opacity',0.85);
+    }
+
+    // Labels for other key points
+    if(!isStandalone && !isMobile && (i===0||i===4||i===7||i===9||i===10)){
       svg.append('text')
         .attr('x',x(d.year)+8).attr('y',y(d.cost)-10)
         .attr('fill',d.projected?'#10b981':'#94a3b8')
