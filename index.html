@@ -157,6 +157,59 @@ section{position:relative;z-index:1;min-height:100vh;padding:100px 2rem 60px}
 .map-label{font-size:10px;fill:var(--text-secondary);pointer-events:none}
 .map-feature{fill:rgba(148,163,184,0.08);stroke:rgba(148,163,184,0.2);stroke-width:0.5}
 
+/* Rockets */
+.rocket-silhouette{cursor:pointer;transition:filter 0.3s}
+.rocket-silhouette:hover{filter:brightness(1.3) drop-shadow(0 0 20px rgba(14,165,233,0.4))}
+.rocket-label{font-family:'Space Grotesk',sans-serif}
+.thrust-bar-track{fill:rgba(148,163,184,0.06);rx:4}
+.thrust-bar-fill{rx:4;transition:width 0.8s cubic-bezier(0.16,1,0.3,1)}
+.comparison-card{
+  display:flex;align-items:center;gap:1.25rem;padding:1rem 1.25rem;
+  border-bottom:1px solid var(--glass-border);
+}
+.comparison-card:last-child{border-bottom:none}
+.comparison-icon{font-size:2rem;flex-shrink:0;width:48px;text-align:center}
+.comparison-text{flex:1}
+.comparison-text .comp-headline{font-weight:700;font-size:1rem;margin-bottom:0.2rem}
+.comparison-text .comp-detail{color:var(--text-secondary);font-size:0.85rem}
+.comparison-number{
+  font-family:'Space Grotesk',sans-serif;font-size:1.8rem;font-weight:800;
+  color:var(--spacex-light);flex-shrink:0;min-width:80px;text-align:right;
+}
+.stat-pills{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.75rem}
+.stat-pill{
+  background:rgba(148,163,184,0.08);border:1px solid var(--glass-border);
+  border-radius:20px;padding:0.3rem 0.75rem;font-size:0.75rem;color:var(--text-secondary);
+  display:flex;align-items:center;gap:0.35rem;
+}
+.stat-pill strong{color:var(--text-primary);font-weight:600}
+
+/* Power meter */
+.power-meter{position:relative;margin:1.5rem 0}
+.power-row{display:flex;align-items:center;gap:1rem;margin-bottom:1rem}
+.power-label{min-width:140px;font-size:0.85rem;font-weight:600;text-align:right;flex-shrink:0}
+.power-bar-track{flex:1;height:32px;background:rgba(148,163,184,0.06);border-radius:6px;overflow:hidden;position:relative}
+.power-bar-fill{height:100%;border-radius:6px;position:relative;overflow:hidden;min-width:2px}
+.power-bar-fill::after{
+  content:'';position:absolute;top:0;left:0;right:0;bottom:0;
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.15) 50%,transparent 100%);
+  animation:powerShimmer 2s ease-in-out infinite;
+}
+@keyframes powerShimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.power-value{min-width:80px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.9rem;flex-shrink:0}
+.landmark-silhouette{opacity:0.85;transition:opacity 0.2s}
+.landmark-silhouette:hover{opacity:1}
+
+/* Wow counter */
+.wow-counter{
+  font-family:'Space Grotesk',sans-serif;font-size:clamp(3rem,8vw,6rem);
+  font-weight:900;text-align:center;line-height:1;
+  background:linear-gradient(135deg,var(--spacex-light),var(--asts-light));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin:1rem 0 0.5rem;
+}
+.wow-label{text-align:center;color:var(--text-secondary);font-size:1.1rem;margin-bottom:2rem}
+
 /* Footer */
 footer{
   position:relative;z-index:1;text-align:center;
@@ -199,6 +252,7 @@ footer a:hover{color:var(--text-primary)}
     <a href="#timeline">Timeline</a>
     <a href="#investment">Investment</a>
     <a href="#satellites">Satellites</a>
+    <a href="#rockets">Rockets</a>
     <a href="#map">Map</a>
   </div>
 </nav>
@@ -288,6 +342,41 @@ footer a:hover{color:var(--text-primary)}
     </div>
     <div class="glass-panel reveal reveal-delay-2">
       <div class="viz-container" id="satellite-viz"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ROCKETS -->
+<section id="rockets">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="overline">Launch Vehicle Comparison</div>
+      <h2>The Machines That Shake the Earth</h2>
+      <p>Scaled side-by-side: the rockets being built and launched from these very facilities. Hover each rocket for detailed specs.</p>
+    </div>
+    <div class="glass-panel reveal reveal-delay-1">
+      <div class="viz-container" id="rockets-viz"></div>
+    </div>
+
+    <div class="section-header reveal" style="margin-top:3rem">
+      <div class="overline">Height vs Landmarks</div>
+      <h2>Taller Than the Statue of Liberty</h2>
+      <p>These rockets dwarf some of the world's most iconic structures. Silhouettes drawn to scale.</p>
+    </div>
+    <div class="glass-panel reveal reveal-delay-1">
+      <div class="viz-container" id="landmarks-viz"></div>
+    </div>
+
+    <div class="section-header reveal" style="margin-top:3rem">
+      <div class="overline">Raw Power</div>
+      <h2>Wait… How Much Power?</h2>
+      <p>Starship's 33 Raptor engines produce ~224 gigawatts of thermal power at launch. That's not a typo. Here's what that means.</p>
+    </div>
+    <div class="glass-panel reveal reveal-delay-1">
+      <div class="viz-container" id="power-viz"></div>
+    </div>
+    <div class="reveal reveal-delay-2" style="margin-top:1.5rem">
+      <div class="glass-panel" id="thrust-comparisons"></div>
     </div>
   </div>
 </section>
@@ -849,7 +938,399 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 });
 
 // ============================================================
-// 5. MAP VISUALIZATION
+// 5. ROCKET COMPARISON VISUALIZATION
+// ============================================================
+const rocketData = [
+  {name:'Starship',sub:'Super Heavy + Ship',company:'SpaceX',height:121,heightFt:397,diameter:9,
+   thrustKN:80000,thrustLbf:'17M',engines:'33+6 Raptor',payloadLEO:'150–200t',
+   firstFlight:'2024',reusable:'Both stages ("chopstick" catch)',thermalGW:224,
+   color:'#0ea5e9',note:'Tallest and most powerful rocket ever flown'},
+  {name:'Saturn V',sub:'Historical',company:'NASA',height:111,heightFt:363,diameter:10,
+   thrustKN:35100,thrustLbf:'7.9M',engines:'5 F-1',payloadLEO:'140t',
+   firstFlight:'1967',reusable:'No (expendable)',thermalGW:190,
+   color:'#94a3b8',note:'Moon rocket — flew 1967–1973'},
+  {name:'SLS',sub:'Block 1',company:'NASA',height:98,heightFt:322,diameter:8.4,
+   thrustKN:39000,thrustLbf:'8.8M',engines:'4 RS-25 + 2 SRBs',payloadLEO:'95t',
+   firstFlight:'Nov 2022',reusable:'No (fully expendable)',thermalGW:100,
+   color:'#f97316',note:'Artemis program — ~$2.2B per launch'},
+  {name:'New Glenn',sub:'',company:'Blue Origin',height:98,heightFt:322,diameter:7,
+   thrustKN:17000,thrustLbf:'3.85M',engines:'7 BE-4',payloadLEO:'45t',
+   firstFlight:'Jan 2025',reusable:'First stage only',thermalGW:46,
+   color:'#38bdf8',note:'Blue Origin\'s orbital-class heavy-lift rocket'},
+  {name:'Falcon 9',sub:'Block 5',company:'SpaceX',height:70,heightFt:229,diameter:3.7,
+   thrustKN:7600,thrustLbf:'1.7M',engines:'9 Merlin',payloadLEO:'22.8t',
+   firstFlight:'2010',reusable:'First stage',thermalGW:16,
+   color:'#64748b',note:'300+ flights — most-launched active rocket'},
+];
+
+const landmarkData = [
+  {name:'London Eye',height:135,icon:'🎡',color:'#94a3b8'},
+  {name:'Starship',height:121,icon:'🚀',color:'#0ea5e9',isRocket:true},
+  {name:'St Paul\'s Cathedral',height:111,icon:'⛪',color:'#94a3b8'},
+  {name:'Saturn V',height:111,icon:'🚀',color:'#78716c',isRocket:true},
+  {name:'New Glenn',height:98,icon:'🚀',color:'#38bdf8',isRocket:true},
+  {name:'SLS',height:98,icon:'🚀',color:'#f97316',isRocket:true},
+  {name:'Big Ben',height:96,icon:'🕐',color:'#94a3b8'},
+  {name:'Statue of Liberty',height:93,icon:'🗽',color:'#94a3b8'},
+  {name:'Falcon 9',height:70,icon:'🚀',color:'#64748b',isRocket:true},
+  {name:'Tower Bridge',height:65,icon:'🌉',color:'#94a3b8'},
+  {name:'Leaning Tower\nof Pisa',height:56,icon:'🏛️',color:'#94a3b8'},
+  {name:'Nelson\'s Column',height:52,icon:'🏛️',color:'#94a3b8'},
+];
+
+const powerComparisons = [
+  {icon:'⚡',headline:'19% of the entire US power grid',detail:'The US grid capacity is ~1,200 GW. Starship at launch produces 224 GW — nearly a fifth of it.', value:'224 GW'},
+  {icon:'☢️',headline:'224 nuclear reactors firing at once',detail:'Each Raptor engine\'s thermal output exceeds an entire nuclear power plant (~1 GW). Starship has 33 on the booster alone.', value:'224×'},
+  {icon:'🇬🇧',headline:'Three entire UK power grids',detail:'The UK grid capacity is ~76 GW. Starship could power all of Britain three times over — from a single launch.', value:'3× UK'},
+  {icon:'🏎️',headline:'150,000 Formula 1 cars at full throttle',detail:'An F1 car produces about 1.5 MW at peak power. You\'d need 150,000 of them to match one Starship launch.', value:'150K'},
+  {icon:'🏗️',headline:'60 Hoover Dams',detail:'Hoover Dam generates ~2.08 GW when running full bore. Starship equals about 60 of them. For 8 minutes.', value:'60×'},
+  {icon:'🌙',headline:'18% more powerful than Saturn V',detail:'The mighty Saturn V produced ~190 GW. Starship surpasses the Moon rocket by nearly a fifth.', value:'+18%'},
+];
+
+function drawRockets(){
+  const container=document.getElementById('rockets-viz');
+  container.innerHTML='';
+  const W=container.clientWidth;
+  const isMobile=W<600;
+  const margin={top:20,right:20,bottom:60,left:20};
+  const rocketW=Math.min((W-margin.left-margin.right)/rocketData.length, isMobile?80:160);
+  const chartW=rocketW*rocketData.length;
+  const offsetX=(W-chartW)/2;
+  const maxH=121;
+  const barArea=Math.min(500, W*0.55);
+  const hScale=d3.scaleLinear().domain([0,maxH]).range([0,barArea]);
+  const H=barArea+margin.top+margin.bottom+60;
+
+  const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const ground=margin.top+barArea;
+
+  // Ground line
+  svg.append('line').attr('x1',0).attr('x2',W).attr('y1',ground).attr('y2',ground)
+    .attr('stroke','rgba(148,163,184,0.15)').attr('stroke-width',1);
+
+  // Height reference lines
+  [50,100,121].forEach(h=>{
+    const y=ground-hScale(h);
+    svg.append('line').attr('x1',margin.left).attr('x2',W-margin.right)
+      .attr('y1',y).attr('y2',y).attr('stroke','rgba(148,163,184,0.06)').attr('stroke-width',1)
+      .attr('stroke-dasharray','4,6');
+    svg.append('text').attr('x',margin.left-4).attr('y',y+4)
+      .attr('text-anchor','end').attr('fill','#475569').attr('font-size','9px').text(h+'m');
+  });
+
+  rocketData.forEach((r,i)=>{
+    const cx=offsetX+i*rocketW+rocketW/2;
+    const bw=Math.min(rocketW*0.5, r.diameter*4);
+    const bh=hScale(r.height);
+
+    const g=svg.append('g').attr('class','rocket-silhouette');
+
+    // Rocket body
+    const bodyGrad=svg.append('defs').append('linearGradient')
+      .attr('id',`rgrad-${i}`).attr('x1','0%').attr('x2','100%');
+    bodyGrad.append('stop').attr('offset','0%').attr('stop-color',r.color).attr('stop-opacity',0.5);
+    bodyGrad.append('stop').attr('offset','50%').attr('stop-color',r.color).attr('stop-opacity',0.8);
+    bodyGrad.append('stop').attr('offset','100%').attr('stop-color',r.color).attr('stop-opacity',0.5);
+
+    // Nose cone (triangle)
+    const noseH=bh*0.12;
+    const bodyY=ground-bh+noseH;
+    const noseY=ground-bh;
+
+    g.append('polygon')
+      .attr('points',`${cx},${noseY} ${cx-bw/2},${bodyY} ${cx+bw/2},${bodyY}`)
+      .attr('fill',`url(#rgrad-${i})`).attr('opacity',0)
+      .transition().duration(800).delay(i*150).attr('opacity',1);
+
+    // Body rectangle
+    g.append('rect')
+      .attr('x',cx-bw/2).attr('y',bodyY)
+      .attr('width',bw).attr('height',0)
+      .attr('fill',`url(#rgrad-${i})`).attr('rx',2)
+      .transition().duration(1000).delay(i*150).ease(d3.easeCubicOut)
+      .attr('height',bh-noseH);
+
+    // Booster separation line (for 2-stage rockets)
+    if(r.name!=='Saturn V'){
+      const sepY=ground-bh*0.35;
+      g.append('line').attr('x1',cx-bw/2).attr('x2',cx+bw/2)
+        .attr('y1',sepY).attr('y2',sepY)
+        .attr('stroke','rgba(255,255,255,0.2)').attr('stroke-width',0.5)
+        .attr('opacity',0).transition().delay(800+i*150).duration(400).attr('opacity',1);
+    }
+
+    // Exhaust glow (animated)
+    const exhaustGrad=svg.append('defs').append('radialGradient')
+      .attr('id',`exhaust-${i}`).attr('cx','50%').attr('cy','0%').attr('r','100%');
+    exhaustGrad.append('stop').attr('offset','0%').attr('stop-color',r.color).attr('stop-opacity',0.6);
+    exhaustGrad.append('stop').attr('offset','100%').attr('stop-color',r.color).attr('stop-opacity',0);
+
+    g.append('ellipse').attr('cx',cx).attr('cy',ground+8)
+      .attr('rx',bw*0.6).attr('ry',12)
+      .attr('fill',`url(#exhaust-${i})`).attr('opacity',0)
+      .transition().delay(1000+i*150).duration(600).attr('opacity',0.7);
+
+    // Hover target (invisible wider rect)
+    g.append('rect')
+      .attr('x',cx-rocketW/2).attr('y',noseY-10).attr('width',rocketW).attr('height',bh+30)
+      .attr('fill','transparent').style('cursor','pointer')
+      .on('mouseover',function(e){
+        showTooltip(e,`${r.name} ${r.sub}`,r.company,
+          `<strong>${r.height}m (${r.heightFt} ft)</strong> tall · ${r.diameter}m diameter<br>`+
+          `Thrust: <strong>${r.thrustLbf} lbf</strong> (${(r.thrustKN/1000).toFixed(0)}K kN)<br>`+
+          `Engines: ${r.engines}<br>`+
+          `Payload to LEO: <strong>${r.payloadLEO}</strong><br>`+
+          `First flight: ${r.firstFlight}<br>`+
+          `Reusable: ${r.reusable}<br><br>`+
+          `<em>${r.note}</em>`);
+      })
+      .on('mousemove',moveTooltip)
+      .on('mouseout',hideTooltip);
+
+    // Name label
+    g.append('text').attr('x',cx).attr('y',ground+30)
+      .attr('text-anchor','middle').attr('fill',r.color).attr('font-size',isMobile?'10px':'13px')
+      .attr('font-weight','700').attr('font-family','Space Grotesk,sans-serif')
+      .attr('opacity',0).text(r.name)
+      .transition().delay(600+i*150).duration(500).attr('opacity',1);
+
+    // Height label
+    g.append('text').attr('x',cx).attr('y',ground+44)
+      .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size',isMobile?'8px':'10px')
+      .attr('opacity',0).text(`${r.height}m / ${r.heightFt}ft`)
+      .transition().delay(700+i*150).duration(500).attr('opacity',1);
+
+    // Payload badge
+    if(!isMobile){
+      g.append('text').attr('x',cx).attr('y',noseY-14)
+        .attr('text-anchor','middle').attr('fill',r.color).attr('font-size','11px').attr('font-weight','600')
+        .attr('opacity',0).text(r.payloadLEO+' to LEO')
+        .transition().delay(900+i*150).duration(500).attr('opacity',0.8);
+    }
+  });
+
+  // Thrust comparison bar chart at bottom
+  const thrustY=ground+60;
+  svg.attr('viewBox',`0 0 ${W} ${H}`);
+}
+
+// ============================================================
+// 5b. LANDMARK HEIGHT COMPARISON
+// ============================================================
+function drawLandmarks(){
+  const container=document.getElementById('landmarks-viz');
+  container.innerHTML='';
+  const W=container.clientWidth;
+  const isMobile=W<600;
+  const margin={top:10,right:10,bottom:70,left:10};
+  const itemW=Math.min((W-margin.left-margin.right)/landmarkData.length, isMobile?55:100);
+  const chartW=itemW*landmarkData.length;
+  const offsetX=Math.max(0,(W-chartW)/2);
+  const maxH=140;
+  const barArea=Math.min(420,W*0.48);
+  const hScale=d3.scaleLinear().domain([0,maxH]).range([0,barArea]);
+  const H=barArea+margin.top+margin.bottom+20;
+  const ground=margin.top+barArea;
+
+  const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+
+  // Ground
+  svg.append('line').attr('x1',0).attr('x2',W).attr('y1',ground).attr('y2',ground)
+    .attr('stroke','rgba(148,163,184,0.15)').attr('stroke-width',1);
+
+  landmarkData.forEach((d,i)=>{
+    const cx=offsetX+i*itemW+itemW/2;
+    const bh=hScale(d.height);
+    const bw=d.isRocket?Math.min(itemW*0.35,18):Math.min(itemW*0.55,36);
+    const g=svg.append('g').attr('class','landmark-silhouette');
+
+    if(d.isRocket){
+      // Rocket shape
+      const noseH=bh*0.1;
+      const bodyY=ground-bh+noseH;
+      g.append('polygon')
+        .attr('points',`${cx},${ground-bh} ${cx-bw/2},${bodyY} ${cx+bw/2},${bodyY}`)
+        .attr('fill',d.color).attr('fill-opacity',0.7);
+      g.append('rect').attr('x',cx-bw/2).attr('y',bodyY).attr('width',bw)
+        .attr('height',0).attr('fill',d.color).attr('fill-opacity',0.7).attr('rx',1)
+        .transition().duration(1000).delay(i*80).ease(d3.easeCubicOut)
+        .attr('height',bh-noseH);
+    } else {
+      // Landmark: outlined bar
+      g.append('rect').attr('x',cx-bw/2).attr('y',ground)
+        .attr('width',bw).attr('height',0)
+        .attr('fill',d.color).attr('fill-opacity',0.08)
+        .attr('stroke',d.color).attr('stroke-width',1.5).attr('stroke-opacity',0.35)
+        .attr('stroke-dasharray','6,3').attr('rx',3)
+        .transition().duration(1000).delay(i*80).ease(d3.easeCubicOut)
+        .attr('y',ground-bh).attr('height',bh);
+    }
+
+    // Height label on top
+    g.append('text').attr('x',cx).attr('y',ground-bh-6)
+      .attr('text-anchor','middle').attr('fill',d.color).attr('font-size',isMobile?'7px':'10px')
+      .attr('font-weight','600').attr('opacity',0)
+      .text(d.height+'m')
+      .transition().delay(500+i*80).duration(500).attr('opacity',0.9);
+
+    // Icon
+    g.append('text').attr('x',cx).attr('y',ground+18)
+      .attr('text-anchor','middle').attr('font-size',isMobile?'14px':'20px')
+      .attr('opacity',0).text(d.icon)
+      .transition().delay(300+i*80).duration(400).attr('opacity',1);
+
+    // Name
+    const nameLines=d.name.split('\n');
+    nameLines.forEach((line,li)=>{
+      g.append('text').attr('x',cx).attr('y',ground+34+li*12)
+        .attr('text-anchor','middle').attr('fill',d.isRocket?d.color:'#64748b')
+        .attr('font-size',isMobile?'7px':'9px').attr('font-weight',d.isRocket?'600':'400')
+        .attr('opacity',0).text(line)
+        .transition().delay(400+i*80).duration(400).attr('opacity',0.9);
+    });
+
+    // Tooltip
+    g.append('rect').attr('x',cx-itemW/2).attr('y',ground-bh-10).attr('width',itemW).attr('height',bh+50)
+      .attr('fill','transparent').style('cursor','pointer')
+      .on('mouseover',(e)=>showTooltip(e,d.name.replace('\n',' '),d.isRocket?'Rocket':'Landmark',
+        `<strong>${d.height}m (${Math.round(d.height*3.281)} ft)</strong>`))
+      .on('mousemove',moveTooltip).on('mouseout',hideTooltip);
+  });
+}
+
+// ============================================================
+// 5c. POWER OUTPUT VISUALIZATION
+// ============================================================
+function drawPower(){
+  const container=document.getElementById('power-viz');
+  container.innerHTML='';
+  const W=container.clientWidth;
+  const isMobile=W<600;
+
+  // Big wow counter
+  const counterDiv=document.createElement('div');
+  counterDiv.innerHTML=`
+    <div class="wow-counter" id="power-counter">0</div>
+    <div class="wow-label">gigawatts of thermal power at launch — from a single Starship</div>
+  `;
+  container.appendChild(counterDiv);
+
+  // Animate the counter
+  let counted=false;
+  const cObs=new IntersectionObserver((entries)=>{
+    if(entries[0].isIntersecting&&!counted){
+      counted=true;
+      const el=document.getElementById('power-counter');
+      let v=0;const target=224;
+      const step=target/80;
+      const iv=setInterval(()=>{
+        v+=step;if(v>=target){v=target;clearInterval(iv)}
+        el.textContent=Math.round(v);
+      },20);
+    }
+  },{threshold:0.3});
+  cObs.observe(counterDiv);
+
+  // Power bars SVG
+  const barData=[
+    {name:'Starship',gw:224,color:'#0ea5e9'},
+    {name:'Saturn V',gw:190,color:'#94a3b8'},
+    {name:'SLS',gw:100,color:'#f97316'},
+    {name:'New Glenn',gw:46,color:'#38bdf8'},
+    {name:'Falcon 9',gw:16,color:'#64748b'},
+  ];
+  const refLines=[
+    {name:'UK grid capacity',gw:76,color:'rgba(248,113,113,0.5)'},
+    {name:'NYC power demand',gw:11,color:'rgba(251,191,36,0.4)'},
+  ];
+
+  const barH=38;const barGap=12;const labelW=isMobile?90:140;const valueW=80;
+  const svgH=(barH+barGap)*barData.length+40;
+  const barMaxW=W-labelW-valueW-40;
+  const maxGW=230;
+  const gwScale=d3.scaleLinear().domain([0,maxGW]).range([0,barMaxW]);
+
+  const svg=d3.select(container).append('svg').attr('viewBox',`0 0 ${W} ${svgH}`).style('margin-top','1.5rem');
+
+  barData.forEach((d,i)=>{
+    const y=i*(barH+barGap)+10;
+
+    // Label
+    svg.append('text').attr('x',labelW-8).attr('y',y+barH/2+5)
+      .attr('text-anchor','end').attr('fill',d.color).attr('font-size',isMobile?'11px':'14px')
+      .attr('font-weight','700').attr('font-family','Space Grotesk,sans-serif').text(d.name);
+
+    // Track
+    svg.append('rect').attr('x',labelW).attr('y',y).attr('width',barMaxW).attr('height',barH)
+      .attr('fill','rgba(148,163,184,0.06)').attr('rx',4);
+
+    // Fill with shimmer
+    const fill=svg.append('rect').attr('x',labelW).attr('y',y)
+      .attr('width',0).attr('height',barH)
+      .attr('fill',d.color).attr('fill-opacity',0.6).attr('rx',4);
+
+    fill.transition().duration(1500).delay(i*200).ease(d3.easeCubicOut)
+      .attr('width',gwScale(d.gw));
+
+    // Shimmer overlay
+    const clipId=`pclip-${i}`;
+    svg.append('defs').append('clipPath').attr('id',clipId)
+      .append('rect').attr('x',labelW).attr('y',y).attr('width',gwScale(d.gw)).attr('height',barH).attr('rx',4);
+
+    const shimmer=svg.append('rect').attr('x',labelW-60).attr('y',y)
+      .attr('width',60).attr('height',barH)
+      .attr('fill','rgba(255,255,255,0.1)').attr('clip-path',`url(#${clipId})`)
+      .attr('opacity',0);
+    shimmer.transition().delay(1500+i*200).duration(0).attr('opacity',1)
+      .transition().duration(1500).ease(d3.easeLinear)
+      .attr('x',labelW+gwScale(d.gw)+10)
+      .on('end',function repeat(){
+        d3.select(this).attr('x',labelW-60)
+          .transition().duration(2500).ease(d3.easeLinear)
+          .attr('x',labelW+gwScale(d.gw)+10).on('end',repeat);
+      });
+
+    // Value
+    svg.append('text').attr('x',labelW+gwScale(d.gw)+8).attr('y',y+barH/2+5)
+      .attr('fill',d.color).attr('font-size','13px').attr('font-weight','700')
+      .attr('font-family','Space Grotesk,sans-serif')
+      .attr('opacity',0).text(d.gw+' GW')
+      .transition().delay(1200+i*200).duration(400).attr('opacity',1);
+  });
+
+  // Reference lines
+  refLines.forEach(r=>{
+    const x=labelW+gwScale(r.gw);
+    svg.append('line').attr('x1',x).attr('x2',x).attr('y1',0).attr('y2',svgH-10)
+      .attr('stroke',r.color).attr('stroke-width',1.5).attr('stroke-dasharray','6,4');
+    svg.append('text').attr('x',x).attr('y',svgH-2)
+      .attr('text-anchor','middle').attr('fill',r.color).attr('font-size','9px').attr('font-weight','500')
+      .text(`← ${r.name} (${r.gw} GW)`);
+  });
+}
+
+// ============================================================
+// 5d. THRUST MIND-BLOWING COMPARISONS (HTML cards)
+// ============================================================
+function drawThrustComparisons(){
+  const container=document.getElementById('thrust-comparisons');
+  if(container.dataset.drawn) return;
+  container.dataset.drawn='1';
+
+  container.innerHTML = powerComparisons.map(c=>`
+    <div class="comparison-card">
+      <div class="comparison-icon">${c.icon}</div>
+      <div class="comparison-text">
+        <div class="comp-headline">${c.headline}</div>
+        <div class="comp-detail">${c.detail}</div>
+      </div>
+      <div class="comparison-number">${c.value}</div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// 6. MAP VISUALIZATION
 // ============================================================
 function drawMap(){
   const container=document.getElementById('map-viz');
@@ -966,7 +1447,8 @@ function drawMap(){
 // INIT + RESIZE
 // ============================================================
 function drawAll(){
-  drawFootprint();drawTimeline();drawInvestment();drawSatellites();drawMap();
+  drawFootprint();drawTimeline();drawInvestment();drawSatellites();
+  drawRockets();drawLandmarks();drawPower();drawThrustComparisons();drawMap();
 }
 
 // Debounced resize
@@ -982,6 +1464,9 @@ const vizObserver=new IntersectionObserver((entries)=>{
       if(id==='timeline-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawTimeline()}
       if(id==='investment-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawInvestment()}
       if(id==='satellite-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawSatellites()}
+      if(id==='rockets-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawRockets()}
+      if(id==='landmarks-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawLandmarks()}
+      if(id==='power-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawPower();drawThrustComparisons()}
       if(id==='map-viz'&&!e.target.dataset.drawn){e.target.dataset.drawn='1';drawMap()}
     }
   });
