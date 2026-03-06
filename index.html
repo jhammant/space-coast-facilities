@@ -1962,16 +1962,19 @@ function drawAll(){
   drawMap();drawSpaceRace();drawSatGrowth();drawCostCollapse();
 }
 
-// Debounced resize
+// Debounced resize — ONLY on width change (mobile scroll changes height constantly)
 let resizeTimer;
+let lastWidth = window.innerWidth;
 window.addEventListener('resize',()=>{
   clearTimeout(resizeTimer);
   resizeTimer=setTimeout(()=>{
-    // Reset thrust-comparisons drawn flag so it redraws
+    const newWidth = window.innerWidth;
+    if(newWidth === lastWidth) return; // Height-only change (mobile address bar) — skip
+    lastWidth = newWidth;
     const tc=document.getElementById('thrust-comparisons');
     if(tc) delete tc.dataset.drawn;
     drawAll();
-  },250);
+  },400);
 });
 
 // Animate hero numbers
