@@ -777,6 +777,67 @@ function fmt(n){return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'
 function fmtDollars(n){return n>=1000?'$'+(n/1000).toFixed(1)+'B':'$'+n+'M'}
 
 // ============================================================
+// SMART AXIS LABELS — prevents overlap on any screen width
+// ============================================================
+function smartAxisLabels(svg, labels, opts) {
+  // labels: [{x, y, text, anchor, fill, fontSize, rotation}]
+  // opts: {minGap: px between labels, maxLabels: hard cap}
+  const minGap = opts.minGap || 40;
+  const maxLabels = opts.maxLabels || 20;
+  const rotation = opts.rotation || 0;
+  
+  // Sort by x position
+  const sorted = [...labels].sort((a, b) => a.x - b.x);
+  
+  // Greedy: keep a label only if it's far enough from the last kept one
+  const kept = [];
+  let lastX = -Infinity;
+  
+  // If too many labels, thin first
+  let step = 1;
+  if (sorted.length > maxLabels) {
+    step = Math.ceil(sorted.length / maxLabels);
+  }
+  
+  for (let i = 0; i < sorted.length; i++) {
+    const l = sorted[i];
+    // Always keep first and last
+    const isFirst = i === 0;
+    const isLast = i === sorted.length - 1;
+    const isStep = i % step === 0;
+    
+    if ((isFirst || isLast || isStep) && (l.x - lastX >= minGap || isFirst)) {
+      kept.push(l);
+      lastX = l.x;
+    }
+  }
+  
+  // If last label was dropped but is important, add it (removing previous if too close)
+  const lastLabel = sorted[sorted.length - 1];
+  if (kept.length > 0 && kept[kept.length - 1] !== lastLabel) {
+    if (lastLabel.x - kept[kept.length - 1].x < minGap) {
+      kept.pop(); // Remove second-to-last to make room
+    }
+    kept.push(lastLabel);
+  }
+  
+  // Render
+  kept.forEach(l => {
+    const t = svg.append('text')
+      .attr('x', l.x).attr('y', l.y)
+      .attr('text-anchor', l.anchor || 'middle')
+      .attr('fill', l.fill || '#64748b')
+      .attr('font-size', l.fontSize || '10px')
+      .text(l.text);
+    if (l.fontStyle) t.attr('font-style', l.fontStyle);
+    if (l.fontWeight) t.attr('font-weight', l.fontWeight);
+    if (rotation) {
+      t.attr('transform', `rotate(${rotation}, ${l.x}, ${l.y})`);
+    }
+  });
+}
+
+// ============================================================
 // 1. FOOTPRINT — D3 TREEMAP
 // ============================================================
 function drawFootprint(){
@@ -887,13 +948,14 @@ function drawTimeline(){
   const x=d3.scaleLinear().domain([2014.5,2027.5]).range([margin.left+10,W-margin.right]);
   const typeIcon={construction:'🔨',completion:'✅',announcement:'📢',expansion:'📐',lease:'📋',contract:'💰',milestone:'🎯'};
 
-  // Year grid
+  // Year grid — smart labels prevent overlap
+  const tlYearLabels = [];
   for(let yr=2015;yr<=2027;yr++){
     svg.append('line').attr('x1',x(yr)).attr('x2',x(yr)).attr('y1',margin.top).attr('y2',H-margin.bottom)
       .attr('stroke','rgba(148,163,184,0.06)').attr('stroke-width',1);
-    svg.append('text').attr('x',x(yr)).attr('y',H-margin.bottom+20)
-      .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size','11px').text(yr);
+    tlYearLabels.push({x:x(yr), y:H-margin.bottom+20, text:String(yr), fontSize:'11px'});
   }
+  smartAxisLabels(svg, tlYearLabels, {minGap: isMobile?40:30});
 
   // "Now" line
   svg.append('line').attr('x1',x(2026.18)).attr('x2',x(2026.18)).attr('y1',margin.top-10).attr('y2',H-margin.bottom)
@@ -1643,14 +1705,15 @@ function drawSpaceRace(){
       .attr('opacity',0.5).text(isMobile?(eraShortLabels[b.label]||b.label):b.label);
   });
 
-  // Decade markers
+  // Decade markers — smart labels
+  const srYearLabels = [];
   for(let yr=1960;yr<=2025;yr+=10){
-    svg.append('text').attr('x',x(yr)).attr('y',H-10)
-      .attr('text-anchor','middle').attr('fill','#475569').attr('font-size','11px').text(yr);
     svg.append('line').attr('x1',x(yr)).attr('x2',x(yr))
       .attr('y1',timelineY-5).attr('y2',timelineY+5)
       .attr('stroke','rgba(148,163,184,0.2)');
+    srYearLabels.push({x:x(yr), y:H-10, text:String(yr), fill:'#475569', fontSize:'11px'});
   }
+  smartAxisLabels(svg, srYearLabels, {minGap: isMobile?45:30});
 
   // Nodes
   spaceRaceData.forEach((d,i)=>{
@@ -1727,13 +1790,13 @@ function drawSatGrowth(){
       .attr('text-anchor','end').attr('fill','#64748b').attr('font-size','10px').text(fmt(v));
   });
 
-  const satYearStep=isMobile?20:10;
-  for(let yr=1960;yr<=2025;yr+=satYearStep){
-    svg.append('text').attr('x',x(yr)).attr('y',H-margin.bottom+20)
-      .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size',isMobile?'9px':'10px').text(yr);
+  // Smart x-axis labels — auto-thins to prevent overlap
+  const satYearLabels = [];
+  for(let yr=1960;yr<=2025;yr+=5){
+    satYearLabels.push({x:x(yr), y:H-margin.bottom+20, text:String(yr)});
   }
-  svg.append('text').attr('x',x(2026)).attr('y',H-margin.bottom+20)
-    .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size',isMobile?'9px':'10px').attr('font-style','italic').text('2026*');
+  satYearLabels.push({x:x(2026), y:H-margin.bottom+20, text:'2026*', fontStyle:'italic'});
+  smartAxisLabels(svg, satYearLabels, {minGap: isMobile?45:35});
 
   const area=d3.area().x(d=>x(d.year)).y0(y(0)).y1(d=>y(d.count)).curve(d3.curveMonotoneX);
   const line=d3.line().x(d=>x(d.year)).y(d=>y(d.count)).curve(d3.curveMonotoneX);
@@ -1812,11 +1875,12 @@ function drawCostCollapse(){
       .attr('text-anchor','end').attr('fill','#64748b').attr('font-size','10px').text('$'+fmt(v));
   });
 
-  const costYearStep=isMobile?10:5;
-  for(let yr=1970;yr<=2025;yr+=costYearStep){
-    svg.append('text').attr('x',x(yr)).attr('y',H-margin.bottom+20)
-      .attr('text-anchor','middle').attr('fill','#64748b').attr('font-size',isMobile?'9px':'10px').text(yr);
+  // Smart x-axis labels — auto-thins to prevent overlap
+  const costYearLabels = [];
+  for(let yr=1970;yr<=2027;yr+=5){
+    costYearLabels.push({x:x(yr), y:H-margin.bottom+20, text:String(yr)});
   }
+  smartAxisLabels(svg, costYearLabels, {minGap: isMobile?50:35});
 
   const solidData=costData.filter(d=>!d.projected);
   const projectedData=costData.filter(d=>d.projected);
